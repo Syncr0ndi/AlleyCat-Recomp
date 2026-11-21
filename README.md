@@ -1,8 +1,9 @@
 # Alley Cat for Windows
 
 A native Windows port of **Alley Cat** (Bill Williams / SynSoft, IBM, 1984), the MS-DOS
-game. It runs the original game logic at the speed of a 4.77 MHz IBM PC, with CGA graphics,
-PC-speaker sound and keyboard controls, in an SDL2 window.
+game, rewritten by hand in C from the original 8086 program. It plays like the original on
+a 4.77 MHz IBM PC with CGA graphics and PC-speaker sound, in an SDL2 window, with keyboard
+or a game controller.
 
 **The game itself is not included.** You need your own `CAT.EXE` (55,067 bytes, dated
 22 Aug 1984). On first start the program asks for it and remembers its location in
@@ -12,9 +13,10 @@ PC-speaker sound and keyboard controls, in an SDL2 window.
 
 | Phase | What | State |
 |---|---|---|
-| 1 | Static recompilation of the 8086 code to C, on a small IBM PC model | done: title, menus and gameplay run |
-| 2 | Hand rewrite into readable C, routine by routine, each checked against phase 1 (see docs/REWRITE.md) | started: 7 of 269 routines |
-| 3 | Release that ships no game code or data | planned |
+| 1 | Static recompilation of the 8086 code to C, on a small IBM PC model | done (now the test reference) |
+| 2 | Hand rewrite into C, routine by routine, each checked call by call against phase 1 (docs/REWRITE.md) | done: all 260 routines a PC runs, plus the main loop |
+| 3 | Release built only from the hand-written C, shipping no game code or data | done: `alleycat_release`, `tools/make_release.py` |
+| 4 | Turn the register-level C into plain C (named state, parameters, no CPU model) | next |
 
 ## How it works
 
@@ -37,15 +39,22 @@ handler. It paces itself on the 18.2 Hz BIOS tick and the CGA vertical retrace.
 - `src/app/main.c` is the SDL2 front end: 4:3 window, F11 full screen, F12 screenshot,
   audio queue, real-time pacing at 59.92 Hz frames.
 
+- `src/game/` is the hand-written game: 30 modules (cat, dog, mice, windows, the seven
+  rooms, sound, menus, main loop ...). At this stage each routine keeps the original's
+  register interface, so it can be checked against the recompiled code.
+
 The generated C is derived from the game, so it is written to the build folder and never
-committed.
+committed. The release program (`alleycat_release`) is built without it: only `src/game`,
+the machine and a routine table made from the hand-written function names.
 
 ## Building (Windows, LLVM-MinGW clang)
 
 ```powershell
 cmake -S . -B build/rel -G Ninja -DCMAKE_C_COMPILER=clang -DCAT_EXE="C:/path/to/CAT.EXE"
 cmake --build build/rel
-build/rel/alleycat.exe
+build/rel/alleycat_release.exe        # the game (hand-written C only)
+python tools/make_release.py C:/path/to/CAT.EXE   # dist/AlleyCat-Windows.zip, scanned for game bytes
+python tools/check.py C:/path/to/CAT.EXE --all-rooms   # compare every routine with the original
 ```
 
 CMake fetches SDL2 2.30.9 (pinned by hash). `cat_test.exe` is a headless runner for
@@ -58,7 +67,8 @@ build/rel/cat_test.exe C:/path/to/CAT.EXE --frames 600 --key 100:39 --shot 300:t
 ## Controls (the original game's)
 
 Arrow keys move, Alt jumps/acts, Esc pauses, Ctrl-S sound on/off, Ctrl-R restart,
-Ctrl-M menu. F11 full screen and F12 screenshot are added by this port.
+Ctrl-M menu. Added by this port: F11 full screen, F12 screenshot, game controller (as the
+PC joystick; D-pad/A/Start also act as arrows/Alt/Esc).
 
 ## Licence
 

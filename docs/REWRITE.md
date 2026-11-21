@@ -44,17 +44,26 @@ test tool, and the shipped program contains no translated game code. The data se
 
 ## Progress
 
-| Area (code offset) | Routines | Done | Notes |
-|---|---:|---:|---|
-| 0000-0FFF | 20 | 0 | main loop and game-state dispatch (jump table at 0250), rooms |
-| 1000-1FFF | 44 | 0 | machine setup (13AA-147F), keyboard IRQ handler (14B3), cat control (1E63) |
-| 2000-2FFF | 55 | 7 | drawing primitives 2CB0-2DCA and random 2DFD done; collision 2E29 next |
-| 3000-3FFF | 38 | 0 | scoring / bonus multiplier text (3A6C uses BIOS text) |
-| 4000-4FFF | 44 | 0 | room logic |
-| 5000-5FFF | 60 | 0 | speaker sound effects (5400-5B54), menus and joystick setup (5C60-5FE5) |
-| 6000-6FFF | 8 | 0 | intro animation (6040), flying object (6106-62A6) |
-| total | 269 | 7 | |
+All routines are hand-written (src/game, 30 modules), 260 checked call by call against the
+recompiled code with 0 mismatches (`python tools/check.py CAT.EXE --all-rooms`: random play
+seeds, every room pinned, joystick mode, the quit key; interrupts recorded and replayed).
+Not checkable that way, and covered by play instead:
 
-Done and verified (0 mismatches, flags included, over a 3000-frame scripted game):
-2CB0 screen_address, 2CCC sprite_draw, 2D35 sprite_and, 2D70 rect_copy, 2D9D blit,
-2DCA grab, 2DFD random.
+- 0000 and the room loops 0260-0459 (`mainloop.c`): they never return. All their callees
+  are checked; in normal play no recompiled routine runs (`--coverage` stays empty) and the
+  release runner executes 0 interpreted game instructions.
+- 14FB, 1554: the PCjr keyboard handlers; the emulated machine is an IBM PC, so they never
+  run and are not part of the release.
+
+Harness notes: liveness-masked register/flag comparison (tools/liveness.py), port I/O and
+INT 1Ah recorded / replayed, interrupts replayed by I/O position and routine entry/return
+count, stalled hand runs abandoned, line coverage of the hand code (tools/hand_coverage.py).
+Room-entry, room-finish and cage-drop pokes in `cat_test --rooms` give coverage autoplay
+alone would not reach.
+
+## Next: plain C
+
+Turn the register-level routines into ordinary C: a `Game` struct with named fields over the
+data segment, routines with parameters and return values instead of AX/CF, direct calls
+instead of `CALL(0x....)`, and the BIOS / port accesses as calls into a small platform
+layer. Then the CPU model is no longer needed for the game, only for the checker.
