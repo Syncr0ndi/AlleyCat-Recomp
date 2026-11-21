@@ -304,5 +304,5 @@ void v30_interpret(V30 *c) {
         step(c);
         v30_interp_count++;
         if (c->cycles <= 0 || (c->irq_pending && c->ifl)) v30_sync_point(c);
-    } while (!v30_lookup(c));
+    } while (!v30_lookup(c) && c->sreg[V30_CS] != 0xF000);   /* F000: the C BIOS (dispatcher) */
 }

@@ -282,7 +282,9 @@ static void pc_bios(V30 *c, unsigned vec) {
     case 0x20: pc->on_exit(pc, 0); break;
     case 0x21: if (AH == 0x4C || AH == 0x00) pc->on_exit(pc, AH == 0x4C ? AL : 0); break;
     case 0x19: case 0xE05B: pc->on_exit(pc, 0); break;  /* Ctrl-Alt-Del in the game reboots */
-    default: break;
+    default:
+        if (vec >= 0x100) v30_fatal(c, "Execution reached the BIOS ROM at F000:%04X (not an entry point).", vec);
+        break;
     }
 }
 

@@ -7,26 +7,32 @@
 int cat_hand_mode = HAND_ON;
 uint32_t cat_cov[0x10000];
 
-/* memory that a routine may change: PSP + program image + data segment, and CGA memory */
-#define R0_LO 0x10000u
-#define R0_HI 0x20300u
-#define R1_LO 0xB8000u
-#define R1_HI 0xBC000u
-#define SNAP  ((R0_HI - R0_LO) + (R1_HI - R1_LO))
+/* memory that a routine may change: interrupt vectors and BIOS data (without the BIOS tick
+ * count, which the machine advances), PSP + program image + data segment, and CGA memory */
+static const uint32_t regions[][2] = {{0x00000, 0x0046C}, {0x00471, 0x00500}, {0x10000, 0x20300}, {0xB8000, 0xBC000}};
+#define NREG 4
+#define SNAP ((0x0046C - 0x00000) + (0x00500 - 0x00471) + (0x20300 - 0x10000) + (0xBC000 - 0xB8000))
 
 typedef struct { V30 cpu; uint8_t mem[SNAP]; } Snap;
 
 static void take(Snap *s, const V30 *c) {
     s->cpu = *c;
-    memcpy(s->mem, c->mem + R0_LO, R0_HI - R0_LO);
-    memcpy(s->mem + (R0_HI - R0_LO), c->mem + R1_LO, R1_HI - R1_LO);
+    unsigned k = 0;
+    for (int r = 0; r < NREG; r++) { uint32_t n = regions[r][1] - regions[r][0]; memcpy(s->mem + k, c->mem + regions[r][0], n); k += n; }
 }
 static void put(const Snap *s, V30 *c) {
     *c = s->cpu;
-    memcpy(c->mem + R0_LO, s->mem, R0_HI - R0_LO);
-    memcpy(c->mem + R1_LO, s->mem + (R0_HI - R0_LO), R1_HI - R1_LO);
+    unsigned k = 0;
+    for (int r = 0; r < NREG; r++) { uint32_t n = regions[r][1] - regions[r][0]; memcpy(c->mem + regions[r][0], s->mem + k, n); k += n; }
 }
-static uint32_t snap_addr(unsigned i) { return i < R0_HI - R0_LO ? R0_LO + i : R1_LO + (i - (R0_HI - R0_LO)); }
+static uint32_t snap_addr(unsigned i) {
+    for (int r = 0; r < NREG; r++) {
+        uint32_t n = regions[r][1] - regions[r][0];
+        if (i < n) return regions[r][0] + i;
+        i -= n;
+    }
+    return 0;
+}
 
 /* differing register / flag bits, in tools/liveness.py order:
  * AL AH CL CH DL DH BL BH SP BP SI DI ES CS SS DS CF ZF SF OF PF AF DF */
