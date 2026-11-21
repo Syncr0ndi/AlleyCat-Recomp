@@ -12,7 +12,7 @@ void hand_5889(V30 *c) {
     AL = AH;
     v30_out(c, 0x42, AL, 0);
     AL = (uint8_t)v30_in(c, 0x61, 0);
-    AL |= 3;
+    AL = or8(c, AL, 3);
     v30_out(c, 0x61, AL, 0);
     V30_TICK(60);
 }
