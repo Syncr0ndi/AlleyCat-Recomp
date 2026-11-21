@@ -99,7 +99,13 @@ static void on_frame(PC *p) {
     long f = (long)p->frames;
     if (ap_on) autoplay(p, f);
     /* --rooms: every 400 frames, act as if the cat had jumped through a window (test coverage) */
-    if (ap_rooms && f % 400 == 0) p->mem[((PC_LOAD_SEG + 0x10) << 4) + 0x551] = 1;
+    static int room_pending;
+    if (ap_rooms && f % 400 == 0) room_pending = 1 + (f / 400) % 5;
+    if (room_pending && !cat_hand_busy()) {       /* never while a routine is being compared */
+        p->mem[((PC_LOAD_SEG + 0x10) << 4) + 0x551] = 1;
+        if (room_pending == 5) p->mem[((PC_LOAD_SEG + 0x10) << 4) + 0x418] = 1;   /* special room */
+        room_pending = 0;
+    }
     for (int i = 0; i < nkeys; i++) {
         if (keys[i].frame == f) pc_key(p, keys[i].sc, true);
         if (keys[i].frame + keys[i].len == f) pc_key(p, keys[i].sc, false);

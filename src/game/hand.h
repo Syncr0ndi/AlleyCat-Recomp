@@ -48,6 +48,7 @@ static inline void sg16(V30 *c, uint16_t off, uint16_t v) { w16(c, GAME_DS, off,
 
 enum { HAND_GEN = 0, HAND_ON = 1, HAND_CHECK = 2 };
 extern int cat_hand_mode;
+int cat_hand_busy(void);                 /* inside a check-mode comparison */
 /* Calls the routine at code-segment offset `off` (hand-written or recompiled), like CALL. */
 void cat_call(V30 *c, uint16_t off);
 /* Check-mode summary: per routine, calls compared and mismatches. Returns total mismatches. */

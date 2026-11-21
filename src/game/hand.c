@@ -69,6 +69,7 @@ static Stat stats[0x10000];
 static unsigned printed;
 static Snap *pool[8];
 static int depth;
+int cat_hand_busy(void) { return depth != 0; }
 
 static void report_mismatch(unsigned off, const Snap *in, const Snap *g, const Snap *h, int flags_only) {
     if (printed++ >= 20) return;
