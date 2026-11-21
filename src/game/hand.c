@@ -64,7 +64,7 @@ static int mem_diff(const Snap *g, const Snap *h, unsigned *first) {
     return 0;
 }
 
-typedef struct { unsigned calls, bad, flag_bad; } Stat;
+typedef struct { unsigned calls, bad, flag_bad, nested; } Stat;
 static Stat stats[0x10000];
 static unsigned printed;
 static Snap *pool[8];
@@ -150,7 +150,7 @@ static int in_hand_run;
 
 void cat_hand_call(V30 *c, unsigned off, cat_fn hand, cat_fn gen) {
     if (cat_hand_mode == HAND_GEN) { gen(c); return; }
-    if (cat_hand_mode == HAND_ON || (depth && in_hand_run)) { hand(c); c->ip = pop16(c); return; }
+    if (cat_hand_mode == HAND_ON || (depth && in_hand_run)) { if (depth) stats[off].nested++; hand(c); c->ip = pop16(c); return; }
     if (depth) { gen(c); return; }        /* inside the recompiled run of an outer check */
     /* check: run both from the same state, compare, keep the recompiled result */
     Stat *st = &stats[off];
@@ -205,8 +205,8 @@ unsigned cat_hand_report(FILE *f) {
     unsigned total = 0;
     for (unsigned o = 0; o < 0x10000; o++) {
         Stat *s = &stats[o];
-        if (!s->calls) continue;
-        fprintf(f, "  hand_%04x: %7u calls checked, %u mismatches, %u flag-only differences\n", o, s->calls, s->bad, s->flag_bad);
+        if (!s->calls && !s->nested) continue;
+        fprintf(f, "  hand_%04x: %7u calls checked, %u mismatches, %u flag-only differences, %u nested\n", o, s->calls, s->bad, s->flag_bad, s->nested);
         total += s->bad;
     }
     return total;

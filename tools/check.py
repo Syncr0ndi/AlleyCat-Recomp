@@ -22,12 +22,12 @@ def run(seed):
     return seed, p.stdout, p.stderr
 
 
-calls, bad, flags = collections.Counter(), collections.Counter(), collections.Counter()
+calls, bad, flags, nested = collections.Counter(), collections.Counter(), collections.Counter(), collections.Counter()
 errors = []
 with concurrent.futures.ThreadPoolExecutor(max_workers=os.cpu_count() or 4) as ex:
     for seed, out, err in ex.map(run, range(1, a.seeds + 1)):
-        for m in re.finditer(r"hand_([0-9a-f]{4}):\s+(\d+) calls checked, (\d+) mismatches, (\d+) flag", out):
-            o = m.group(1); calls[o] += int(m.group(2)); bad[o] += int(m.group(3)); flags[o] += int(m.group(4))
+        for m in re.finditer(r"hand_([0-9a-f]{4}):\s+(\d+) calls checked, (\d+) mismatches, (\d+) flag-only differences, (\d+) nested", out):
+            o = m.group(1); calls[o] += int(m.group(2)); bad[o] += int(m.group(3)); flags[o] += int(m.group(4)); nested[o] += int(m.group(5))
         if err.strip(): errors.append(f"--- seed {seed}\n" + "\n".join(err.strip().splitlines()[:30]))
         if "end: frame" not in out: errors.append(f"--- seed {seed}: run did not finish\n{out[-500:]}")
 
@@ -35,10 +35,10 @@ done = set()
 for f in (ROOT / "src" / "game").glob("*.c"):
     done |= set(re.findall(r"^void hand_([0-9a-f]{4})\(V30 \*c\)", f.read_text(), re.M))
 for o in sorted(done):
-    tag = "NEVER CALLED" if not calls[o] else ("OK" if not bad[o] else "MISMATCH")
-    print(f"  {o.upper()}  {calls[o]:8d} calls  {bad[o]:5d} bad  {flags[o]:5d} flag-only  {tag}")
+    tag = ("NEVER CALLED" if not nested[o] else "OK (inside callers)") if not calls[o] else ("OK" if not bad[o] else "MISMATCH")
+    print(f"  {o.upper()}  {calls[o]:8d} calls  {nested[o]:8d} nested  {bad[o]:5d} bad  {tag}")
 total = sum(bad.values())
 print(f"{len(done)} routines, {sum(calls.values())} calls checked, {total} mismatches, "
-      f"{sum(1 for o in done if not calls[o])} never called")
+      f"{sum(1 for o in done if not calls[o] and not nested[o])} never called")
 for e in errors[:4]: print(e)
 sys.exit(1 if total or errors else 0)

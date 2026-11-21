@@ -46,6 +46,14 @@ static inline void     w16(V30 *c, uint16_t s, uint16_t o, uint16_t v) { wr16(c,
 static inline uint16_t g16(V30 *c, uint16_t off) { return m16(c, GAME_DS, off); }
 static inline void sg16(V30 *c, uint16_t off, uint16_t v) { w16(c, GAME_DS, off, v); }
 
+#define CALL(off) cat_call(c, (off))
+#define INT(n)    v30_int(c, (n))           /* BIOS call through the interrupt vector */
+/* 8086 compare / test: set the flags exactly as CMP / TEST would */
+#define CMP8(a, b)  ((void)sub8(c, (uint8_t)(a), (uint8_t)(b), 0))
+#define CMP16(a, b) ((void)sub16(c, (uint16_t)(a), (uint16_t)(b), 0))
+#define TEST8(a, b) ((void)and8(c, (uint8_t)(a), (uint8_t)(b)))
+#define TEST16(a, b) ((void)and16(c, (uint16_t)(a), (uint16_t)(b)))
+
 enum { HAND_GEN = 0, HAND_ON = 1, HAND_CHECK = 2 };
 extern int cat_hand_mode;
 int cat_hand_busy(void);                 /* inside a check-mode comparison */
