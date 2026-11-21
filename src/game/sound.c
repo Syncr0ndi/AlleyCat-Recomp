@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Syncr0ndi
 /* Alley Cat, hand-written: PC speaker sound effects and background sounds.
  *
  * [0000] is the sound switch (Ctrl-S). Tones go through timer channel 2 (port 42h, mode 3

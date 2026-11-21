@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Syncr0ndi
 /* Alley Cat, hand-written: interrupt vectors and the keyboard interrupt handler.
  *
  * The game replaces INT 09h (and INT 48h on the PCjr) with its own handler, which keeps the

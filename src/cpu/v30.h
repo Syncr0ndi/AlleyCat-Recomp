@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Syncr0ndi
 /* 8086 CPU state and instruction semantics shared by recompiled code and the interpreter.
  * Taken from LOHT-Recomp (NEC V30, a superset of the 8086); the IBM PC memory map replaces the
  * M72 one: 1 MB of RAM, F0000-FFFFF is read-only and calls into F000 run the C BIOS.

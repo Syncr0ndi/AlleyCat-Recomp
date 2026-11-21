@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Syncr0ndi
 /* Alley Cat, hand-written: drawing the alley and the rooms.
  *
  * Most scenery is a "picture list": a word (rows:bytes of each piece) followed by

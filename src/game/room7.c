@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Syncr0ndi
 /* Alley Cat, hand-written: rectangle overlap test, and room 7 (the wall of bricks).
  *
  * Room 7: a wall of brick rows (y at 2BD4, 7 rows; first index per row at 2BDB; brick

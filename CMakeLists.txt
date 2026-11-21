@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Syncr0ndi
 cmake_minimum_required(VERSION 3.20)
 project(alleycat_recomp C)
 

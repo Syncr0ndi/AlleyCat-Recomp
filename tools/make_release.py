@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Syncr0ndi
 """Assemble the player release in dist/AlleyCat/ and zip it.
 
-Contents: alleycat.exe (the build made only from the hand-written C), README.txt,
-LICENSE.txt (this port), SDL2-LICENSE.txt. The game file itself is never included; as a
+Contents: alleycat.exe (the build made only from the hand-written C), README.txt, and
+LICENSES/ with this port's MIT licence and SDL2's zlib licence. The game file itself is never included; as a
 safety check the program is scanned for any 32-byte run of the original CAT.EXE.
 
 Usage: python tools/make_release.py CAT.EXE [--build build/rel]"""
@@ -29,10 +31,14 @@ if out.exists(): shutil.rmtree(out)
 out.mkdir(parents=True)
 shutil.copy2(exe, out / "alleycat.exe")
 shutil.copy2(ROOT / "release" / "README.txt", out / "README.txt")
-shutil.copy2(ROOT / "LICENSE", out / "LICENSE.txt")
+lic = out / "LICENSES"
+lic.mkdir()
+shutil.copy2(ROOT / "LICENSE", lic / "AlleyCat-port-LICENSE.txt")
 sdl = next(iter((b / "_deps" / "sdl2-src").glob("LICENSE*")), None)
-if sdl: shutil.copy2(sdl, out / "SDL2-LICENSE.txt")
+if not sdl: sys.exit("SDL2 licence not found in the build folder")
+shutil.copy2(sdl, lic / "SDL2-LICENSE.txt")
 z = ROOT / "dist" / "AlleyCat-Windows.zip"
 with zipfile.ZipFile(z, "w", zipfile.ZIP_DEFLATED) as zf:
-    for f in sorted(out.iterdir()): zf.write(f, f"AlleyCat/{f.name}")
+    for f in sorted(p for p in out.rglob("*") if p.is_file()):
+        zf.write(f, "AlleyCat/" + f.relative_to(out).as_posix())
 print(f"OK: {out} and {z} ({z.stat().st_size // 1024} KB); no CAT.EXE content found in the program")

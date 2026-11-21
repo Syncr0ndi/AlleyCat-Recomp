@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Syncr0ndi
 /* Loading and checking the player's CAT.EXE. */
 #include "game_file.h"
 #include <stdio.h>

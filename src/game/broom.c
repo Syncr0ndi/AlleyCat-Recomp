@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Syncr0ndi
 /* Alley Cat, hand-written: the broom in the rooms, and the cat's paw prints.
  *
  * Walking on the floor the cat leaves prints (up to 4 per 8-pixel column, [328E+col]).

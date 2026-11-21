@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Syncr0ndi
 /* IBM PC machine model for Alley Cat. See pc.h. */
 #include "pc.h"
 #include "font8x8.h"

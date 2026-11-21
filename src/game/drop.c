@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Syncr0ndi
 /* Alley Cat, hand-written: the object thrown from a window in the alley.
  *
  * Position x [1671] (word), y [1673] (0 = none), horizontal direction [1674] (1 right,

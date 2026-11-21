@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Syncr0ndi
 /* Alley Cat, hand-written: CGA drawing primitives and the random number generator.
  *
  * Screen memory is CGA 320x200x4: byte = 4 pixels (bits 7-6 leftmost), even rows at B800:0000,

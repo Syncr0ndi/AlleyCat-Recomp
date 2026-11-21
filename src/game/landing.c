@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Syncr0ndi
 /* Alley Cat, hand-written: what the cat can stand on.
  *
  * Alley: the clothesline item maps (1016, see lines.c), the window sills (table at 0FF0:

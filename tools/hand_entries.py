@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Syncr0ndi
 """Routine table for the release build: every hand_XXXX in src/game/*.c, at its address.
 
 Usage: python tools/hand_entries.py SRC_DIR OUT.c

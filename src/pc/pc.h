@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Syncr0ndi
 /* The parts of a 1984 IBM PC (5150/XT) that Alley Cat uses, around the recompiled 8086 code:
  * 1 MB of memory with CAT.EXE loaded as DOS would, a small C BIOS (INT 10h/11h/1Ah), the
  * 8253 timer (channel 0 read-back, channel 2 -> PC speaker), the keyboard on IRQ 1 with a

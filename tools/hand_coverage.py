@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Syncr0ndi
 """Line coverage of the hand-written C (src/game) under check-mode autoplay runs.
 
 Builds build/cov (clang source-based coverage, no SDL app) if needed, runs the check seeds,

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Syncr0ndi
 /* Alley Cat, hand-written: the program's entry and main loop (never returns).
  *
  * Start-up -> title -> menu -> new game -> alley loop; jumping through a window picks a

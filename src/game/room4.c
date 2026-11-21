@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Syncr0ndi
 /* Alley Cat, hand-written: room 4, the cheese room with mouse holes.
  *
  * Four mice (n = 0-3, [3EDA] the one moved this tick) each live in a hole ([3EBA+2n], one

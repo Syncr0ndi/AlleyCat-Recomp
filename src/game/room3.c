@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Syncr0ndi
 /* Alley Cat, hand-written: room 3, the bookshelves.
  *
  * Three things to knock off the shelves ([37B0+2n] still there, x [37A3+2n], screen

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Syncr0ndi
 /* Alley Cat for Windows: SDL2 front end around the recompiled game.
  *
  * Finds the player's CAT.EXE (command line, alleycat.ini, next to the program, or a file

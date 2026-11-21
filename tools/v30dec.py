@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Syncr0ndi
 """NEC V30 (8086 + 80186 + NEC extensions) instruction decoder.
 
 decode(mem, cs, ip) -> Insn. `mem` is a bytes-like 1 MB address space.

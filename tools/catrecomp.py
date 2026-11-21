@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Syncr0ndi
 """Static recompiler: Alley Cat 8086 program -> C (adapted from LOHT-Recomp's v30recomp.py).
 
 Reads the user's CAT.EXE, maps it with tools/catmap.py and writes C into OUTDIR (a build

@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Syncr0ndi
 """Routine table for the rewrite: size, callees, I/O, and a bottom-up order.
 Usage: python tools/callgraph.py CAT.EXE"""
 import sys, collections, re

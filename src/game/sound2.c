@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Syncr0ndi
 /* Alley Cat, hand-written: more sound effects, the level-up picture, the display check. */
 #include "hand.h"
 

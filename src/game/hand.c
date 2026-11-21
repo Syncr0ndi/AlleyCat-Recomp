@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Syncr0ndi
 /* Running and checking hand-written routines against the recompiled originals. */
 #include "hand.h"
 #include <stdlib.h>

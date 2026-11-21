@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Syncr0ndi
 /* Alley Cat, hand-written: the cat's position and motion state.
  *
  * Cat variables (data segment): x [0579] (word, pixels), y [057B] (byte), y + 50 [057C],

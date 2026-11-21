@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Syncr0ndi
 /* Alley Cat, hand-written: score, high score and lives.
  *
  * Scores are 7 unpacked BCD digits, most significant first: score at 1F82, high score at

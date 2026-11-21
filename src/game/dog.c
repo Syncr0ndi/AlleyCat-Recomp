@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Syncr0ndi
 /* Alley Cat, hand-written: the bulldog.
  *
  * The dog runs in from a side when the cat is on the ground ([1CC0] entering steps,

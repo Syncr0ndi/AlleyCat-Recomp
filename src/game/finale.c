@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Syncr0ndi
 /* Alley Cat, hand-written: winning room 7 (the sweetheart), hearts, level-up tunes, and the
  * graffiti on the fence. Tunes are lists of PIT divisors played one per BIOS tick. */
 #include "hand.h"

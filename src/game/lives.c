@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Syncr0ndi
 /* Alley Cat, hand-written: the picture shown between scenes (cat face / lives), faded in
  * by masking it with a growing bit pattern while a sound plays. */
 #include "hand.h"

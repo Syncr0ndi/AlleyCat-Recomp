@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Syncr0ndi
 /* Alley Cat, hand-written: room 7's flying thing, and the sweetheart picture.
  *
  * Flyer: active [70F2], x [70F3], y [70F5] (it falls 2 per step), direction [70F6], wing

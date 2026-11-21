@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Syncr0ndi
 /* Alley Cat, hand-written: room 6, the sleeping dogs and the bowls of milk.
  *
  * 12 dog places ([4441+2n] occupied, sleep state [4459+2n]: 0 asleep .. 2 awake, x [43E1+2n],

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Syncr0ndi
 /* Alley Cat, hand-written: the moving clotheslines in the alley.
  *
  * Each of the lines (index 0-2 in [052F]) scrolls one byte (4 pixels) per update, left or

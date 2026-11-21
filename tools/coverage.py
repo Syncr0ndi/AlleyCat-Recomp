@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Syncr0ndi
 """Merge --coverage files and list routines never entered. Usage: coverage.py ROUTINES.txt COV..."""
 import collections, re, sys
 c = collections.Counter()

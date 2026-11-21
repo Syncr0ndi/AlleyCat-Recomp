@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Syncr0ndi
 #pragma once
 #include <stddef.h>
 #include <stdint.h>

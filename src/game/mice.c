@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Syncr0ndi
 /* Alley Cat, hand-written: the three mice in the alley, and the creature on the sills.
  *
  * Mouse n (0-2, one moved per BIOS tick, [1F6C]): x [1F30+2n], y [1F36+n], direction

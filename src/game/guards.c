@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Syncr0ndi
 /* Alley Cat, hand-written: room 7's wall guards, one per brick row.
  *
  * Each guard has a 12-byte record (copied to 4548 while it is processed, tables at

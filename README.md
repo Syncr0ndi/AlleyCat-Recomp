@@ -1,76 +1,132 @@
-# Alley Cat for Windows
+<p align="center">
+  <img src="docs/images/logo.svg" alt="Alley Cat Recomp" width="620">
+</p>
 
-A native Windows port of **Alley Cat** (Bill Williams / SynSoft, IBM, 1984), the MS-DOS
-game, rewritten by hand in C from the original 8086 program. It plays like the original on
-a 4.77 MHz IBM PC with CGA graphics and PC-speaker sound, in an SDL2 window, with keyboard
-or a game controller.
+<p align="center">
+  <b>Bill Williams' 1984 IBM PC classic <i>Alley Cat</i>, rewritten in C to run natively on Windows.</b><br>
+  No DOSBox, no game files included &mdash; bring your own <code>CAT.EXE</code> and play.
+</p>
 
-**The game itself is not included.** You need your own `CAT.EXE` (55,067 bytes, dated
-22 Aug 1984). On first start the program asks for it and remembers its location in
-`alleycat.ini`.
+<p align="center">
+  <img src="https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-0078D6?style=for-the-badge" alt="Platform: Windows 10 | 11">
+  <img src="https://img.shields.io/badge/status-1.0-2ea44f?style=for-the-badge" alt="Status: 1.0">
+  <img src="https://img.shields.io/badge/license-MIT-2ea44f?style=for-the-badge" alt="License: MIT">
+  <img src="https://img.shields.io/badge/written%20in-C-555555?style=for-the-badge" alt="Written in C">
+</p>
 
-## Status
+<!-- Screenshots are not included on purpose: they would be the original game's artwork. -->
 
-| Phase | What | State |
+> [!IMPORTANT]
+> **This project contains no game data.** You need your own copy of the original DOS program
+> **`CAT.EXE`** (55,067 bytes, dated 22 August 1984). Please only use a copy you are legally
+> entitled to use. Don't ask for the game file here.
+
+---
+
+## ✨ Highlights
+
+- 🐈 **The real game, natively**: every routine of the original 8086 program was rewritten by hand
+  in C and compiled to native x86-64 code. There's no DOSBox, and no emulator executes the game's
+  instructions.
+- ✅ **Proven identical**: each of the 260 routines was run side by side with a machine-exact
+  recompilation of the original and compared register for register, byte for byte:
+  **241 million calls, zero differences**.
+- 🔒 **Ships nothing copyrighted**: the download contains only this project's own code. Your
+  `CAT.EXE` supplies the sprites, tunes and tables when the game starts, and is only ever read.
+- ⏱️ **Original speed and feel**: timing follows a 4.77 MHz IBM PC with CGA graphics, including the
+  18.2 Hz timer and the vertical retrace the game paces itself on.
+- 🔊 **PC-speaker sound** synthesised from the emulated 8253 timer, exactly as the game drives it.
+- 🕹️ **Keyboard and gamepad**: a modern controller works as the old PC joystick. You also get a
+  resizable 4:3 window, full screen and screenshots.
+
+## 🚀 Getting started
+
+1. Download the latest release from the [**Releases**](../../releases) page and unzip it anywhere.
+2. Start **`alleycat.exe`**.
+3. Select your **`CAT.EXE`** when asked. The game checks it's the right file and remembers where it
+   is in `alleycat.ini`.
+
+You can also put `CAT.EXE` next to `alleycat.exe`, or start `alleycat.exe C:\path\to\CAT.EXE`.
+
+> [!TIP]
+> Windows may show *"Windows protected your PC"* for a newly downloaded program. Click
+> **More info → Run anyway**. The game isn't code-signed, which is normal for free hobby projects.
+
+## 🎮 Controls
+
+| Action | Keyboard | Gamepad |
 |---|---|---|
-| 1 | Static recompilation of the 8086 code to C, on a small IBM PC model | done (now the test reference) |
-| 2 | Hand rewrite into C, routine by routine, each checked call by call against phase 1 (docs/REWRITE.md) | done: all 260 routines a PC runs, plus the main loop |
-| 3 | Release built only from the hand-written C, shipping no game code or data | done: `alleycat_release`, `tools/make_release.py` |
-| 4 | Turn the register-level C into plain C (named state, parameters, no CPU model) | next |
+| Move / climb / jump | Arrow keys | D-pad / left stick |
+| Special action (lap milk, put down a brick, go through holes) | `Alt` | A |
+| Pause ("paws") | `Esc` | Start |
+| Sound on / off | `Ctrl`+`S` | |
+| Restart the game | `Ctrl`+`R` | |
+| Back to the menu | `Ctrl`+`M` | |
+| Full screen | `F11` or `Alt`+`Enter` | |
+| Screenshot (PNG next to the game) | `F12` | |
 
-## How it works
+To use the gamepad's analogue stick as the PC joystick, answer **Y** to the game's joystick question.
 
-`CAT.EXE` is an unpacked DOS program of hand-written 8086 assembly: one code segment
-(25 KB), one data segment (29 KB of sprites, tables and variables), and no DOS calls. It
-talks to the BIOS (INT 10h/11h/1Ah) and directly to the hardware: CGA 320x200 4-colour
-video memory, the 8253 timer and port 61h for the speaker, and its own IRQ 1 keyboard
-handler. It paces itself on the 18.2 Hz BIOS tick and the CGA vertical retrace.
+## 🛠️ How it works
 
-- `tools/catmap.py` maps the code by recursive descent (8,482 instructions, 269 functions,
-  98.4% of the code segment; the rest is in-code variables). The only indirect jump is an
-  8-entry table, listed as a seed.
-- `tools/catrecomp.py` turns every instruction into C on an exact emulated register file and
-  stack, and charges approximate 8088 cycle costs so emulated time matches a 4.77 MHz PC. The
-  decoder, recompiler and CPU core come from
-  [LOHT-Recomp](https://github.com/Syncr0ndi/LOHT-Recomp) (NEC V30, a superset of the 8086).
-- `src/pc/` is the machine: memory, a C BIOS, PIT + speaker synthesis, keyboard + 8259, CGA
-  timing and colours. `src/pc/font8x8.c` is a font drawn for this project (the BIOS text
-  font is IBM's).
-- `src/app/main.c` is the SDL2 front end: 4:3 window, F11 full screen, F12 screenshot,
-  audio queue, real-time pacing at 59.92 Hz frames.
-
-- `src/game/` is the hand-written game: 30 modules (cat, dog, mice, windows, the seven
-  rooms, sound, menus, main loop ...). At this stage each routine keeps the original's
-  register interface, so it can be checked against the recompiled code.
-
-The generated C is derived from the game, so it is written to the build folder and never
-committed. The release program (`alleycat_release`) is built without it: only `src/game`,
-the machine and a routine table made from the hand-written function names.
-
-## Building (Windows, LLVM-MinGW clang)
-
-```powershell
-cmake -S . -B build/rel -G Ninja -DCMAKE_C_COMPILER=clang -DCAT_EXE="C:/path/to/CAT.EXE"
-cmake --build build/rel
-build/rel/alleycat_release.exe        # the game (hand-written C only)
-python tools/make_release.py C:/path/to/CAT.EXE   # dist/AlleyCat-Windows.zip, scanned for game bytes
-python tools/check.py C:/path/to/CAT.EXE --all-rooms   # compare every routine with the original
+```mermaid
+flowchart LR
+    A["CAT.EXE<br>(8086 machine code)"] --> B["Code map<br>269 routines"]
+    B --> C["Static recompiler<br>(exact reference)"]
+    B --> D["Hand-written C<br>30 modules"]
+    C <-->|"checked call by call<br>241M calls, 0 differences"| D
+    D --> E["🐈 alleycat.exe"]
+    F["Your CAT.EXE<br>(sprites, tunes, tables)"] -->|"read at start"| E
 ```
 
-CMake fetches SDL2 2.30.9 (pinned by hash). `cat_test.exe` is a headless runner for
-checks: scripted keys, PNG screenshots, WAV audio and video-memory hashes, e.g.
+*Alley Cat* is about 25 KB of hand-written 8086 assembly that talks straight to the hardware: CGA
+video memory, the 8253 timer and PC speaker, and its own keyboard interrupt handler. The port was
+built in two stages:
 
-```powershell
-build/rel/cat_test.exe C:/path/to/CAT.EXE --frames 600 --key 100:39 --shot 300:title.png --status 60
-```
+1. **Recompile**: a static recompiler translated every instruction into C on an exact model of the
+   CPU and an IBM PC. That build plays the game perfectly and serves as the reference.
+2. **Rewrite**: every routine was then rewritten by hand, and a checker ran both versions from the
+   same state on thousands of autoplayed games, comparing registers, flags, memory, port I/O and
+   interrupts after every call.
 
-## Controls (the original game's)
+The released program is built from the hand-written C alone. The recompiled code is generated from
+your own `CAT.EXE` at build time and never committed. The release script also scans the program for
+any trace of the original file.
 
-Arrow keys move, Alt jumps/acts, Esc pauses, Ctrl-S sound on/off, Ctrl-R restart,
-Ctrl-M menu. Added by this port: F11 full screen, F12 screenshot, game controller (as the
-PC joystick; D-pad/A/Start also act as arrows/Alt/Esc).
+More detail: [rewrite method and status](docs/REWRITE.md) ·
+[development guide](docs/DEVELOPMENT.md)
 
-## Licence
+## 🧱 Building from source
 
-MIT for the code in this repository (see LICENSE). Alley Cat is © 1983-84 SynSoft / IBM;
-none of it is in this repository.
+You need Windows, Python 3, CMake, Ninja and LLVM-MinGW (clang). CMake downloads SDL2 itself. See
+the [**development guide**](docs/DEVELOPMENT.md) for the steps, the checker and the test runner.
+
+## ❓ FAQ
+
+**Where do I get `CAT.EXE`?**
+This project can't help with that. Use a copy you're legally entitled to use, for example from your
+own original disk.
+
+**It says the file isn't the known `CAT.EXE`.**
+Only the original 1984 IBM release (55,067 bytes) is supported. Other versions, or files changed
+by a cracker or packer, are refused.
+
+**Is this an emulator?**
+No. The game's logic is native C. What remains is a small model of the 1984 hardware the game draws
+and plays sound through: CGA video memory, timer and speaker, and keyboard.
+
+**Why does it look so chunky?**
+It's 320 × 200 in four colours, just like a CGA screen in 1984. That's the point. 🙂
+
+## 🙏 Credits & licence
+
+- *Alley Cat* &copy; 1983–84 Bill Williams / SynSoft, published by IBM. This is an unofficial,
+  non-commercial fan project, not affiliated with or endorsed by the copyright holders.
+- [SDL2](https://www.libsdl.org/) (zlib licence) for the window, input and audio.
+- CPU core and recompiler tools adapted from [LOHT-Recomp](https://github.com/Syncr0ndi/LOHT-Recomp)
+  (MIT).
+- Developed with assistance from [Claude](https://claude.com/claude-code) by Anthropic.
+
+This project's own code is released under the [MIT licence](LICENSE) &copy; 2026 Syncr0ndi.
+The licence covers only this project's code, not the game itself. Third-party details are in
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

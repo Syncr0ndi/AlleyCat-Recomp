@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Syncr0ndi
 /* Shared definitions for the hand-written C version of Alley Cat (phase 2).
  *
  * A routine rewritten by hand is `void hand_XXXX(V30 *c)`, where XXXX is the offset of the

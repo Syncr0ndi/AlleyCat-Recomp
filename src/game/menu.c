@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Syncr0ndi
 /* Alley Cat, hand-written: title screen, menus, pause, BIOS text, random seed.
  *
  * Text goes through the BIOS (INT 10h AH=02h cursor, AH=0Eh teletype). The menu lines are a

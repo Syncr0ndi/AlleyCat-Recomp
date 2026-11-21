@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Syncr0ndi
 /* Alley Cat, hand-written: keyboard / joystick input and small hardware helpers.
  *
  * The keyboard interrupt handler keeps one byte per game key at 06B7 (00 = held, 80 = up),

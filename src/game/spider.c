@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Syncr0ndi
 /* Alley Cat, hand-written: room 3's spider and room 4's holes.
  *
  * Spider: x [3964], y [3966] (8 = up at the ceiling), vertical direction [3967], frame

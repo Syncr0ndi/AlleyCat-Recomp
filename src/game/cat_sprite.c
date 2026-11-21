@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Syncr0ndi
 /* Alley Cat, hand-written: drawing the cat and its horizontal movement.
  *
  * The cat is drawn with sprite_and (2D35) at its screen address [055F]; the screen under it

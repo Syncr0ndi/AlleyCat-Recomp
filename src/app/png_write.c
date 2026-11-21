@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Syncr0ndi
 /* Minimal PNG writer (RGB, stored/uncompressed deflate) for debug screenshots. */
 #include "png_write.h"
 #include <stdio.h>

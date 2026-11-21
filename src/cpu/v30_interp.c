@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Syncr0ndi
 /* NEC V30 interpreter: fallback for code with no recompiled entry (e.g. code the i8751 writes
  * into the B0000 shared RAM). Instruction bytes are fetched from memory every time, so code
  * patched at run time is seen. Returns to the dispatcher as soon as CS:IP reaches an address

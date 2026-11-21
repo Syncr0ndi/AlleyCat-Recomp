@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Syncr0ndi
 /* Alley Cat, hand-written: room 5, the bird cage.
  *
  * Cage: x [40A8], y [40AA] (it falls when pushed off the table, with a falling tone, and

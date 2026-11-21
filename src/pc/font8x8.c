@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Syncr0ndi
 /* 8x8 text font for BIOS teletype output in graphics mode (INT 10h AH=0Eh).
  * Drawn for this project in the style of the PC's character set (it is not a copy of the IBM
  * ROM font). Printable ASCII 0x20-0x7E; '#' = pixel set. Built into a bit table on first use. */

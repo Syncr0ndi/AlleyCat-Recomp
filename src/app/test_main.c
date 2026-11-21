@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Syncr0ndi
 /* Headless runner: plays scripted keys as fast as possible and writes screenshots / audio.
  *
  *   cat_test CAT.EXE [--frames N] [--key FRAME:SC[:LEN]]... [--shot FRAME:FILE.png]...

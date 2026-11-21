@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Syncr0ndi
 /* NEC V30 runtime core: non-inline instruction semantics, interrupts and dispatch. */
 #include "v30.h"
 #include <stdarg.h>

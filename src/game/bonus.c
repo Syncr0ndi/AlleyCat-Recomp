@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Syncr0ndi
 /* Alley Cat, hand-written: the bonus after a room, and the fishbowl in room 1.
  *
  * Bonus: points for the time left (binary [3697] -> BCD at 368D, added to the score

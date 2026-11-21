@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Syncr0ndi
 """Check every hand-written routine against the recompiled code over several autoplay runs.
 
 Usage: python tools/check.py CAT.EXE [--seeds N] [--frames N] [--exe build/rel/cat_test.exe]

@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 Syncr0ndi
 """Recursive-descent code map of Alley Cat (CAT.EXE, 1984).
 
 CAT.EXE is an unpacked MZ executable of hand-written 8086 code: one code segment (image

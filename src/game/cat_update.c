@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Syncr0ndi
 /* Alley Cat, hand-written: 08E5 cat_update, the cat's per-step movement.
  *
  * Runs at most once per BIOS tick (every [0684] calls otherwise). In the fishbowl room

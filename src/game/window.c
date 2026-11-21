@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Syncr0ndi
 /* Alley Cat, hand-written: the windows in the alley that open, and what is thrown out.
  *
  * One window at a time: [1665] is its animation step (1Dh opening ... 0Fh open, waiting

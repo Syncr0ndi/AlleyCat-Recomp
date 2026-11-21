@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Syncr0ndi
 /* Alley Cat, hand-written: room 2, the fishbowl.
  *
  * 24 swimmers: 0-11 fish (eat them all to finish the room), 12-23 eels (touching one gives

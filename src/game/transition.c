@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2026 Syncr0ndi
 /* Alley Cat, hand-written: switching scenes and the screen palette.
  *
  * Going through a window, the picture is wiped by a rectangle growing from the cat
