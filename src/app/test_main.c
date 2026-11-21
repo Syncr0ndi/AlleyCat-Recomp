@@ -125,7 +125,8 @@ static void on_frame(PC *p) {
     if (ap_rooms && f % 800 == 600) win_pending = 1;
     if (win_pending && !cat_hand_busy()) {
         uint8_t *ds = p->mem + ((PC_LOAD_SEG + 0x10) << 4);
-        if (ds[4] | ds[5]) ds[0x553] = 1;
+        if (ds[4] == 5 && !ds[5] && (f / 800) % 2 == 0) ds[0x40B1] = 1;   /* room 5: drop the cage */
+        else if (ds[4] | ds[5]) ds[0x553] = 1;
         win_pending = 0;
     }
     for (int i = 0; i < nkeys; i++) {
