@@ -286,7 +286,7 @@ void v30_int(V30 *c, unsigned vec) {
 
 void v30_sync_point(V30 *c) {
     if (c->cycles <= 0) c->sync(c);
-    if (c->irq_pending && c->ifl) {
+    if (c->irq_pending && c->ifl && !c->irq_hold) {
         int v = c->irq_ack(c);
         if (v >= 0) { c->halted = 0; v30_int(c, (unsigned)v); }
     }

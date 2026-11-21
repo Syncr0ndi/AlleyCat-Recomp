@@ -9,6 +9,7 @@
 #include "cat_gen.h"
 #include "game_file.h"
 #include "png_write.h"
+#include "hand.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -45,6 +46,12 @@ static uint32_t vram_hash(void) {
 
 static void finish(int code) {
     if (wav) { wav_header(wav, wav_samples); fclose(wav); }
+    if (cat_hand_mode == HAND_CHECK) {
+        printf("hand-written routines checked against the recompiled code:\n");
+        unsigned bad = cat_hand_report(stdout);
+        printf("total mismatches: %u\n", bad);
+        if (bad && !code) code = 4;
+    }
     printf("end: frame %llu, vram %08x, CS:IP %04X:%04X\n", (unsigned long long)pc.frames, vram_hash(),
            pc.cpu.sreg[V30_CS], pc.cpu.ip);
     fflush(stdout);
@@ -77,6 +84,10 @@ int main(int argc, char **argv) {
         if (!strcmp(argv[i], "--frames") && i + 1 < argc) max_frames = atol(argv[++i]);
         else if (!strcmp(argv[i], "--status") && i + 1 < argc) status_every = atol(argv[++i]);
         else if (!strcmp(argv[i], "--scale") && i + 1 < argc) scale = atof(argv[++i]);
+        else if (!strcmp(argv[i], "--hand-mode") && i + 1 < argc) {
+            const char *m = argv[++i];
+            cat_hand_mode = !strcmp(m, "gen") ? HAND_GEN : !strcmp(m, "check") ? HAND_CHECK : HAND_ON;
+        }
         else if (!strcmp(argv[i], "--key") && i + 1 < argc && nkeys < 512) {
             unsigned sc; int len = 3; long fr;
             if (sscanf(argv[++i], "%ld:%x:%d", &fr, &sc, &len) >= 2) keys[nkeys++] = (KeyEv){fr, (uint8_t)sc, len};

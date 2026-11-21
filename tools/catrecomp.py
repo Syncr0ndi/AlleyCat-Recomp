@@ -7,7 +7,11 @@ directory: the output is derived from the game and is never committed):
   cat_gen_NN.c       generated functions
   cat_gen_entries.c  linear address -> function table for the dispatcher
 
-Usage: python tools/catrecomp.py CAT.EXE OUTDIR [--per-file N] [--no-comments]
+Usage: python tools/catrecomp.py CAT.EXE OUTDIR [--hand SRC_DIR] [--per-file N] [--no-comments]
+
+--hand SRC_DIR: routines rewritten by hand (`void hand_XXXX(V30 *c)` in SRC_DIR/*.c) are
+called through cat_hand_call(), which runs the C version, the recompiled one, or both and
+compares them (src/game/hand.c).
 """
 import collections, sys
 from pathlib import Path
@@ -52,6 +56,7 @@ class Gen:
         self.groups = {k: sorted(v) for k, v in groups.items()}
         per_root = collections.Counter(k[0] for k in self.groups)
         self.fname = {k: f"f_{k[0]:05x}" + (f"_{k[1]:04x}" if per_root[k[0]] > 1 else "") for k in self.groups}
+        self.hand = set()
         # entry labels: function entries, flow targets, return points, resume points
         self.labels = set(m["funcs"]) & set(self.code)
         for l, ins in self.code.items():
@@ -328,7 +333,10 @@ class Gen:
         cs = key[1]
         lab = [l for l in ls if l in self.labels]
         if ls[0] not in lab: lab.insert(0, ls[0])
-        lines = ([f"/* {self.label(key[0])} */"] if self.comments else []) + [f"void {fn}(V30 *c) {{", "    switch (c->ip) {"]
+        root_off = key[0] - cs * 16
+        hand = root_off in self.hand
+        body_fn = f"{fn}_gen" if hand else fn
+        lines = ([f"/* {self.label(key[0])} */"] if self.comments else []) + [f"void {body_fn}(V30 *c) {{", "    switch (c->ip) {"]
         for l in lab:
             lines.append(f"    case 0x{self.code[l].ip:04x}: goto L_{l:05x};")
         lines.append(f'    default: v30_bad_entry(c, "{fn}"); return;')
@@ -349,6 +357,9 @@ class Gen:
                 continue
             lines.append("    " + self.transfer(key, ins.cs, nxt_ip))
         lines.append("}")
+        if hand:   # entry at the start runs the hand-written C (or both, in check mode)
+            lines.append(f"void {fn}(V30 *c) {{ cat_hand_call(c, 0x{root_off:04x}, hand_{root_off:04x}, {body_fn}); }}")
+            return "\n".join(lines), [(l, self.code[l].cs, self.code[l].ip, fn if l == key[0] else body_fn) for l in lab]
         return "\n".join(lines), [(l, self.code[l].cs, self.code[l].ip, fn) for l in lab]
 
 
@@ -460,14 +471,39 @@ ENTRIES_HEAD = "/* Generated. Do not edit. */\n#include \"cat_gen.h\"\n"
 NL = chr(10)
 
 
+def hand_functions(src_dir):
+    """Offsets of routines rewritten by hand: every `void hand_XXXX(V30 *c)` in src/game/*.c."""
+    import re
+    found = set()
+    for f in sorted(Path(src_dir).glob("*.c")):
+        found |= {int(h, 16) for h in re.findall(r"^void hand_([0-9a-f]{4})\(V30 \*c\)", f.read_text(), re.M)}
+    return found
+
+
+def check_hand(g, hand):
+    roots = {k[0] - k[1] * 16: k for k in g.groups}
+    for off in sorted(hand):
+        if off not in roots: raise SystemExit(f"hand_{off:04x}: no routine starts at {off:04X}")
+        key = roots[off]
+        for l, ins in g.code.items():
+            if ins.target is None or g.group_of[l] == key: continue
+            t = g.canon(*ins.target)
+            if t in g.code and g.group_of[t] == key and t != key[0]:
+                raise SystemExit(f"hand_{off:04x}: {ins.ip:04X} enters the routine in the middle at {t - key[1] * 16:04X}")
+
+
 def main():
-    args = [a for a in sys.argv[1:] if not a.startswith("--")]
+    argv = sys.argv[1:]
+    args = [a for i, a in enumerate(argv) if not a.startswith("--") and (i == 0 or argv[i - 1] not in ("--hand", "--per-file"))]
     if len(args) != 2: raise SystemExit(__doc__)
     exe, out = args[0], Path(args[1])
     per_file = 60
     if "--per-file" in sys.argv: per_file = int(sys.argv[sys.argv.index("--per-file") + 1])
     comments = "--no-comments" not in sys.argv
     g = Gen(catmap.main(exe, quiet=True), comments)
+    if "--hand" in sys.argv:
+        g.hand = hand_functions(sys.argv[sys.argv.index("--hand") + 1])
+        check_hand(g, g.hand)
     keys = sorted(g.groups)
     entries, chunks = {}, []
     for fi in range(0, len(keys), per_file):
@@ -485,6 +521,10 @@ def main():
     hdr = ["/* Generated. Do not edit. */", "#pragma once", '#include "v30.h"',
            "extern const v30_entry cat_entries[];", "extern const unsigned cat_entry_count;"]
     hdr += [f"void {g.fname[k]}(V30 *c);" for k in keys]
+    hdr += ["typedef void (*cat_fn)(V30 *c);",
+            "void cat_hand_call(V30 *c, unsigned off, cat_fn hand, cat_fn gen);"]
+    hdr += [f"void hand_{o:04x}(V30 *c);" for o in sorted(g.hand)]
+    hdr += [f"void {g.fname[k]}_gen(V30 *c);" for k in keys if k[0] - k[1] * 16 in g.hand]
     files = {"cat_gen.h": NL.join(hdr) + NL, "cat_gen_entries.c": "".join(ent)}
     for i, text in enumerate(chunks): files[f"cat_gen_{i:02d}.c"] = text
     out.mkdir(parents=True, exist_ok=True)

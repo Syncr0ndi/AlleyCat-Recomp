@@ -13,7 +13,7 @@ PC-speaker sound and keyboard controls, in an SDL2 window.
 | Phase | What | State |
 |---|---|---|
 | 1 | Static recompilation of the 8086 code to C, on a small IBM PC model | done: title, menus and gameplay run |
-| 2 | Hand rewrite into readable C, module by module, checked against phase 1 frame by frame | started |
+| 2 | Hand rewrite into readable C, routine by routine, each checked against phase 1 (see docs/REWRITE.md) | started: 7 of 269 routines |
 | 3 | Release that ships no game code or data | planned |
 
 ## How it works

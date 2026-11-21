@@ -44,6 +44,7 @@ struct V30 {
     void (*sync)(V30 *c);           /* advance the machine; may set irq_pending */
     int  (*irq_ack)(V30 *c);        /* returns interrupt vector number, or -1 */
     volatile uint8_t irq_pending;
+    uint8_t irq_hold;               /* >0: interrupts wait (used while comparing routines) */
     uint8_t trace;
     int tail_depth;                 /* nested tail calls (compilers without musttail) */
 };
