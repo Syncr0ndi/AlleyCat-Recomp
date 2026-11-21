@@ -120,6 +120,14 @@ static void on_frame(PC *p) {
         if (room_pending == 5 && ap_room < 0) ds[0x418] = 1;   /* special room */
         room_pending = 0;
     }
+    /* and every other time, half way, as if the room had been finished (bonus screens) */
+    static int win_pending;
+    if (ap_rooms && f % 800 == 600) win_pending = 1;
+    if (win_pending && !cat_hand_busy()) {
+        uint8_t *ds = p->mem + ((PC_LOAD_SEG + 0x10) << 4);
+        if (ds[4] | ds[5]) ds[0x553] = 1;
+        win_pending = 0;
+    }
     for (int i = 0; i < nkeys; i++) {
         if (keys[i].frame == f) pc_key(p, keys[i].sc, true);
         if (keys[i].frame + keys[i].len == f) pc_key(p, keys[i].sc, false);
