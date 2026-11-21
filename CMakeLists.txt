@@ -76,3 +76,27 @@ if(MINGW)
     endif()
   endforeach()
 endif()
+
+# Release game: only the hand-written C (src/game) and the machine; no recompiled code.
+# The routine table is made from the hand-written function names (addresses only).
+if(CAT_BUILD_APP)
+  add_custom_command(OUTPUT ${CMAKE_BINARY_DIR}/hand_entries.c
+    COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tools/hand_entries.py ${CMAKE_SOURCE_DIR}/src/game ${CMAKE_BINARY_DIR}/hand_entries.c
+    DEPENDS ${HAND_SRC} ${CMAKE_SOURCE_DIR}/tools/hand_entries.py)
+  add_executable(alleycat_release WIN32 src/app/main.c src/app/game_file.c src/app/png_write.c
+                 ${HAND_SRC} ${CMAKE_BINARY_DIR}/hand_entries.c)
+  target_include_directories(alleycat_release PRIVATE src/game)
+  target_compile_definitions(alleycat_release PRIVATE CAT_RELEASE)
+  target_link_libraries(alleycat_release PRIVATE pcmachine SDL2::SDL2main SDL2::SDL2-static)
+  add_executable(cat_test_release src/app/test_main.c src/app/png_write.c src/app/game_file.c
+                 ${HAND_SRC} ${CMAKE_BINARY_DIR}/hand_entries.c)
+  target_include_directories(cat_test_release PRIVATE src/game)
+  target_compile_definitions(cat_test_release PRIVATE CAT_RELEASE)
+  target_link_libraries(cat_test_release PRIVATE pcmachine)
+  if(WIN32)
+    target_link_libraries(alleycat_release PRIVATE comdlg32)
+  endif()
+  if(MINGW)
+    target_link_options(alleycat_release PRIVATE -static -s)
+  endif()
+endif()

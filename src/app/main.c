@@ -5,7 +5,8 @@
  * Keys: the game's own (arrows, Alt, Esc, Ctrl-S/R/M, letters). F11 or Alt+Enter: full screen.
  * F12: screenshot (PNG next to the program). Window close: quit. */
 #include "pc.h"
-#include "cat_gen.h"
+extern const v30_entry cat_entries[];   /* the game's routines (hand-written; or recompiled in dev builds) */
+extern const unsigned cat_entry_count;
 #include "game_file.h"
 #include "png_write.h"
 #include <SDL.h>
@@ -31,6 +32,30 @@ static double frame_ticks;
 static char base_dir[1024], ini_path[1100];
 static uint8_t held[128];
 static long selftest_frames;
+static SDL_GameController *pad;
+static uint8_t pad_keys[4];                       /* arrows held through the D-pad */
+
+/* game controller: the left stick / D-pad is the PC joystick (game port), A and B its buttons;
+ * the D-pad, A and Start also press the arrow keys, Alt and Esc for keyboard mode */
+static void pad_update(void) {
+    if (!pad) return;
+    int x = SDL_GameControllerGetAxis(pad, SDL_CONTROLLER_AXIS_LEFTX);
+    int y = SDL_GameControllerGetAxis(pad, SDL_CONTROLLER_AXIS_LEFTY);
+    int l = SDL_GameControllerGetButton(pad, SDL_CONTROLLER_BUTTON_DPAD_LEFT);
+    int r = SDL_GameControllerGetButton(pad, SDL_CONTROLLER_BUTTON_DPAD_RIGHT);
+    int u = SDL_GameControllerGetButton(pad, SDL_CONTROLLER_BUTTON_DPAD_UP);
+    int d = SDL_GameControllerGetButton(pad, SDL_CONTROLLER_BUTTON_DPAD_DOWN);
+    if (l) x = -32768; else if (r) x = 32767;
+    if (u) y = -32768; else if (d) y = 32767;
+    pc.joy_axis[0] = (uint8_t)((x + 32768) >> 8);
+    pc.joy_axis[1] = (uint8_t)((y + 32768) >> 8);
+    pc.joy_buttons = (uint8_t)(SDL_GameControllerGetButton(pad, SDL_CONTROLLER_BUTTON_A) |
+                               SDL_GameControllerGetButton(pad, SDL_CONTROLLER_BUTTON_B) << 1);
+    const uint8_t sc[4] = {0x4B, 0x4D, 0x48, 0x50};
+    const int now[4] = {l || x < -16000, r || x > 16000, u || y < -16000, d || y > 16000};
+    for (int i = 0; i < 4; i++)
+        if (now[i] != pad_keys[i]) { pad_keys[i] = (uint8_t)now[i]; pc_key(&pc, sc[i], now[i] != 0); }
+}
 
 /* ---------------------------------------------------------------- keyboard: SDL -> XT set 1 */
 static uint8_t xt_code(SDL_Scancode s) {
@@ -136,6 +161,15 @@ static void poll_events(void) {
     SDL_Event e;
     while (SDL_PollEvent(&e)) {
         switch (e.type) {
+        case SDL_CONTROLLERDEVICEADDED:
+            if (!pad) pad = SDL_GameControllerOpen(e.cdevice.which);
+            break;
+        case SDL_CONTROLLERBUTTONDOWN: case SDL_CONTROLLERBUTTONUP: {
+            uint8_t sc = e.cbutton.button == SDL_CONTROLLER_BUTTON_A ? 0x38 :
+                         e.cbutton.button == SDL_CONTROLLER_BUTTON_START ? 0x01 : 0;
+            if (sc) pc_key(&pc, sc, e.type == SDL_CONTROLLERBUTTONDOWN);
+            break;
+        }
         case SDL_QUIT: quit_now(0); break;
         case SDL_WINDOWEVENT:
             if (e.window.event == SDL_WINDOWEVENT_FOCUS_LOST) release_all();
@@ -163,6 +197,7 @@ static void poll_events(void) {
 
 static void on_frame(PC *p) {
     poll_events();
+    pad_update();
     present();
     /* audio: keep 40-120 ms queued; trim or pad if the clocks drift apart */
     if (audio) {
@@ -256,7 +291,7 @@ static bool find_game(int argc, char **argv, uint8_t **exe, size_t *len) {
 }
 
 int main(int argc, char **argv) {
-    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_EVENTS) != 0) { fprintf(stderr, "SDL: %s\n", SDL_GetError()); return 1; }
+    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_EVENTS | SDL_INIT_GAMECONTROLLER) != 0) { fprintf(stderr, "SDL: %s\n", SDL_GetError()); return 1; }
     char *bp = SDL_GetBasePath();
     snprintf(base_dir, sizeof base_dir, "%s", bp ? bp : "");
     SDL_free(bp);
@@ -286,6 +321,9 @@ int main(int argc, char **argv) {
 
     pc.mem = calloc(1, 0x100000);
     pc.on_frame = on_frame; pc.on_exit = on_exit_;
+    for (int i = 0; i < SDL_NumJoysticks() && !pad; i++)
+        if (SDL_IsGameController(i)) pad = SDL_GameControllerOpen(i);
+    pc.joy_present = pad != NULL;                      /* a game port with a joystick, if there is a pad */
     pc.sound_on = true;
     {   /* BIOS clock starts at the current time of day, as on a real PC after DOS set it */
         time_t t = time(NULL); struct tm *lt = localtime(&t);

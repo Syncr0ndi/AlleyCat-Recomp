@@ -6,7 +6,10 @@
  * SC is an XT scancode in hex (1C Enter, 39 Space, 48/50/4B/4D arrows, 38 Alt, 15 Y, 31 N...).
  * The key is held for LEN frames (default 3). Each status line prints a hash of video RAM. */
 #include "pc.h"
-#include "cat_gen.h"
+extern const v30_entry cat_entries[];
+extern const unsigned cat_entry_count;
+extern unsigned long long v30_interp_count;
+extern uint32_t cat_cov[0x10000];
 #include "game_file.h"
 #include "png_write.h"
 #include "hand.h"
@@ -57,6 +60,7 @@ static void finish(int code) {
         printf("total mismatches: %u\n", bad);
         if (bad && !code) code = 4;
     }
+    printf("interpreted instructions: %llu\n", (unsigned long long)v30_interp_count);
     printf("end: frame %llu, vram %08x, CS:IP %04X:%04X\n", (unsigned long long)pc.frames, vram_hash(),
            pc.cpu.sreg[V30_CS], pc.cpu.ip);
     fflush(stdout);

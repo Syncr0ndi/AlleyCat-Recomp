@@ -1,9 +1,30 @@
 /* Running and checking hand-written routines against the recompiled originals. */
 #include "hand.h"
-#include "cat_gen.h"
 #include <stdlib.h>
 #include <string.h>
 #include <setjmp.h>
+
+#ifdef CAT_RELEASE
+/* Release build: only the hand-written routines exist (table from tools/hand_entries.py). */
+int cat_hand_mode = HAND_ON;
+uint32_t cat_cov[0x10000];
+uint32_t cat_seq;
+int cat_hand_busy(void) { return 0; }
+unsigned cat_hand_report(FILE *f) { (void)f; return 0; }
+void cat_call(V30 *c, uint16_t off) {
+    uint16_t ret_sp = SP;
+    push16(c, 0xFFFF);
+    c->ip = off;
+    c->sreg[V30_CS] = PC_LOAD_SEG + 0x723;
+    v30_fn f = v30_lookup(c);
+    if (!f) v30_fatal(c, "cat_call: no routine at %04X", off);
+    f(c);
+    while (!(c->ip == 0xFFFF && SP == ret_sp)) v30_dispatch(c);
+    /* like the original's loop jumps: time passes and interrupts are taken between calls */
+    if (c->cycles <= 0 || (c->irq_pending && c->ifl)) v30_sync_point(c);
+}
+#else
+#include "cat_gen.h"
 
 int cat_hand_mode = HAND_ON;
 static int in_hand_run;
@@ -268,6 +289,7 @@ void cat_call(V30 *c, uint16_t off) {
     f(c);
     while (!(c->ip == 0xFFFF && SP == ret_sp)) v30_dispatch(c);   /* unusual returns */
     if (in_hand_run) rep_irqs(c, 1);          /* interrupts the original took during that call */
+    if (c->cycles <= 0 || (c->irq_pending && c->ifl)) v30_sync_point(c);   /* as at the original's loop jumps */
 }
 
 unsigned cat_hand_report(FILE *f) {
@@ -280,3 +302,4 @@ unsigned cat_hand_report(FILE *f) {
     }
     return total;
 }
+#endif /* CAT_RELEASE */
