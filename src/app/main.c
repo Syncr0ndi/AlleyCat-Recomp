@@ -30,6 +30,7 @@ static uint64_t perf_freq, next_deadline;
 static double frame_ticks;
 static char base_dir[1024], ini_path[1100];
 static uint8_t held[128];
+static long selftest_frames;
 
 /* ---------------------------------------------------------------- keyboard: SDL -> XT set 1 */
 static uint8_t xt_code(SDL_Scancode s) {
@@ -97,6 +98,16 @@ static void present(void) {
     if (dh > h) { dh = h; dw = h * 4 / 3; }
     SDL_Rect dst = {(w - dw) / 2, (h - dh) / 2, dw, dh};
     SDL_RenderCopy(ren, big, NULL, &dst);
+    if (selftest_frames && (long)pc.frames >= selftest_frames) {   /* --selftest N: save what the window shows */
+        uint32_t *px = malloc((size_t)w * h * 4);
+        char path[1200];
+        snprintf(path, sizeof path, "%salleycat_selftest.png", base_dir);
+        if (px && SDL_RenderReadPixels(ren, NULL, SDL_PIXELFORMAT_ARGB8888, px, w * 4) == 0)
+            png_write_argb(path, px, w, h, 1);
+        free(px);
+        SDL_Quit();
+        exit(0);
+    }
     SDL_RenderPresent(ren);
 }
 
@@ -226,6 +237,7 @@ static void msg(const char *text) { SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFO
 
 static bool find_game(int argc, char **argv, uint8_t **exe, size_t *len) {
     char cand[1200];
+    for (int i = 1; i + 1 < argc; i++) if (!strcmp(argv[i], "--selftest")) selftest_frames = atol(argv[i + 1]);
     if (argc > 1 && argv[1][0] != '-') return game_file_load(argv[1], exe, len) == GAME_FILE_OK;
     read_ini(cand, sizeof cand);
     if (cand[0] && game_file_load(cand, exe, len) == GAME_FILE_OK) return true;
