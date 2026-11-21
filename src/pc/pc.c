@@ -277,6 +277,12 @@ static void pc_bios(V30 *c, unsigned vec) {
         if (AH == 0) {
             update_ticks(pc, pc_time(pc));
             DX = bda_r16(pc, 0x6C); CX = bda_r16(pc, 0x6E); AL = *bda(pc, 0x70); *bda(pc, 0x70) = 0;
+        } else if (AH == 1) {                           /* set the tick count (the game's pause) */
+            uint32_t want = ((uint32_t)CX << 16 | DX) % 0x1800B0;
+            uint64_t now_ticks = (uint64_t)(pc_time(pc) / TICK_CYC) % 0x1800B0;
+            tick_base = (uint32_t)((want + 0x1800B0 - now_ticks) % 0x1800B0);
+            bda_w16(pc, 0x6C, (uint16_t)want); bda_w16(pc, 0x6E, (uint16_t)(want >> 16));
+            *bda(pc, 0x70) = 0;
         }
         break;
     case 0x20: pc->on_exit(pc, 0); break;

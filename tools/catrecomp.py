@@ -315,12 +315,12 @@ class Gen:
                        f"c->sreg[1] = s; c->ip = o; V30_TAIL(v30_dispatch);")
         elif f == RET:
             n = ops[0].val if ops else 0
-            out.append(f"c->ip = pop16(c);{f' c->r[4] += 0x{n:x};' if n else ''} return;"); cyc += 13
+            out.append(f"cat_seq++; c->ip = pop16(c);{f' c->r[4] += 0x{n:x};' if n else ''} return;"); cyc += 13
         elif f == RETF:
             n = ops[0].val if ops else 0
-            out.append(f"c->ip = pop16(c); c->sreg[1] = pop16(c);{f' c->r[4] += 0x{n:x};' if n else ''} return;"); cyc += 20
+            out.append(f"cat_seq++; c->ip = pop16(c); c->sreg[1] = pop16(c);{f' c->r[4] += 0x{n:x};' if n else ''} return;"); cyc += 20
         elif f == IRET:
-            out.append("c->ip = pop16(c); c->sreg[1] = pop16(c); v30_set_flags(c, pop16(c)); return;"); cyc += 25
+            out.append("cat_seq++; c->ip = pop16(c); c->sreg[1] = pop16(c); v30_set_flags(c, pop16(c)); return;"); cyc += 25
         else:
             out.append(f'c->ip = 0x{ip:04x}; v30_unimplemented(c, "{mn}"); return;')
         cyc = cost8088(ins)
@@ -339,7 +339,10 @@ class Gen:
         body_fn = f"{fn}_gen" if hand else fn
         lines = ([f"/* {self.label(key[0])} */"] if self.comments else []) + [f"void {body_fn}(V30 *c) {{", "    switch (c->ip) {"]
         for l in lab:
-            lines.append(f"    case 0x{self.code[l].ip:04x}: goto L_{l:05x};")
+            if l == key[0]:   # count real entries only (not loops back to the first instruction)
+                lines.append(f"    case 0x{self.code[l].ip:04x}: cat_cov[0x{root_off:04x}]++; cat_seq++; goto L_{l:05x};")
+            else:
+                lines.append(f"    case 0x{self.code[l].ip:04x}: goto L_{l:05x};")
         lines.append(f'    default: v30_bad_entry(c, "{fn}"); return;')
         lines.append("    }")
         ends = (JMP, JMPF, RET, RETF, IRET, IJMP, IJMPF)
@@ -347,8 +350,6 @@ class Gen:
             ins = self.code[l]
             if l in lab:
                 lines.append(f"L_{l:05x}:")
-            if l == key[0]:
-                lines.append(f"    cat_cov[0x{root_off:04x}]++;")
             if self.comments:
                 lines.append(f"    /* {ins.cs:04X}:{ins.ip:04X} {ins.text()} */")
             lines.append("    " + self.insn(ins, key))
@@ -530,6 +531,7 @@ def main():
            "extern const v30_entry cat_entries[];", "extern const unsigned cat_entry_count;"]
     hdr += [f"void {g.fname[k]}(V30 *c);" for k in keys]
     hdr += ["extern uint32_t cat_cov[0x10000];   /* times each routine was entered (test coverage) */",
+            "extern uint32_t cat_seq;            /* routine entries + returns (orders interrupts in checks) */",
             "extern const uint32_t cat_live_out[][2];", "extern const unsigned cat_live_out_count;",
             "typedef void (*cat_fn)(V30 *c);",
             "void cat_hand_call(V30 *c, unsigned off, cat_fn hand, cat_fn gen);"]

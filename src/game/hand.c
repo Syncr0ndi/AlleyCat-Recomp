@@ -3,9 +3,13 @@
 #include "cat_gen.h"
 #include <stdlib.h>
 #include <string.h>
+#include <setjmp.h>
 
 int cat_hand_mode = HAND_ON;
+static int in_hand_run;
+static void rep_irqs(V30 *c, int at_return);
 uint32_t cat_cov[0x10000];
+uint32_t cat_seq;
 
 /* memory that a routine may change: interrupt vectors and BIOS data (without the BIOS tick
  * count, which the machine advances), PSP + program image + data segment, and CGA memory */
@@ -107,7 +111,7 @@ static void report_mismatch(unsigned off, const Snap *in, const Snap *g, const S
  * gets the recorded INT 1Ah results (time) and runs other BIOS calls for real (they only
  * touch memory, which is restored in between). The machine does not advance while the
  * hand-written version runs. */
-typedef struct { uint8_t kind; uint16_t port; uint16_t val; uint16_t ax, cx, dx; } IoEv;   /* kind: 1 in, 2 out, 3 bios */
+typedef struct { uint8_t kind; uint16_t port; uint16_t val; uint16_t ax, cx, dx; } IoEv;   /* kind: 1 in, 2 out, 3 bios, 4 interrupt */
 #define IO_MAX (1u << 20)
 static IoEv io_log[IO_MAX];
 static unsigned io_n, io_pos, io_bad;
@@ -116,6 +120,8 @@ static uint16_t (*real_in)(V30 *, uint16_t, int);
 static void (*real_out)(V30 *, uint16_t, uint16_t, int);
 static void (*real_bios)(V30 *, unsigned);
 static void (*real_sync)(V30 *);
+static int (*real_ack)(V30 *);
+static int in_isr;
 
 static void io_fail(const char *fmt, unsigned a, unsigned b) {
     if (!io_bad++) snprintf(io_why, sizeof io_why, fmt, a, b);
@@ -131,33 +137,67 @@ static void rec_out(V30 *c, uint16_t port, uint16_t v, int w) {
 }
 static void rec_bios(V30 *c, unsigned vec) {
     real_bios(c, vec);
-    if (io_n < IO_MAX) io_log[io_n++] = (IoEv){3, (uint16_t)vec, 0, AX, CX, DX};
+    if (io_n < IO_MAX) io_log[io_n++] = (IoEv){3, (uint16_t)vec, rd16(c, c->sreg[V30_SS], c->r[V30_SP]), AX, CX, DX};
 }
+static int rec_ack(V30 *c) {
+    int v = real_ack(c);
+    if (v >= 0 && io_n < IO_MAX) io_log[io_n++] = (IoEv){4, (uint16_t)v, 0, (uint16_t)cat_seq, (uint16_t)(cat_seq >> 16), 0};
+    return v;
+}
+/* deliver the interrupts the recompiled run took at this point of the event sequence: at a
+ * return from a call when the original took it inside that call (the boundary count has
+ * moved past the recorded one), otherwise at the next I/O event or idle turn */
+static void rep_irqs(V30 *c, int at_return) {
+    while (!in_isr && io_pos < io_n && io_log[io_pos].kind == 4) {
+        uint32_t seq = io_log[io_pos].ax | (uint32_t)io_log[io_pos].cx << 16;
+        if (at_return == 1 ? cat_seq <= seq : at_return == 0 ? cat_seq < seq : 0) break;
+        unsigned v = io_log[io_pos++].port;
+        in_isr++;
+        v30_int(c, v);
+        in_isr--;
+    }
+}
+static int rep_ack(V30 *c) { c->irq_pending = 0; return -1; }
 static uint16_t rep_in(V30 *c, uint16_t port, int w) {
-    (void)c; (void)w;
+    (void)w;
+    rep_irqs(c, 0);
     if (io_pos >= io_n || io_log[io_pos].kind != 1 || io_log[io_pos].port != port) { io_fail("unexpected IN %03X (event %u)", port, io_pos); return 0xFF; }
     return io_log[io_pos++].val;
 }
 static void rep_out(V30 *c, uint16_t port, uint16_t v, int w) {
-    (void)c; (void)w;
+    (void)w;
+    rep_irqs(c, 0);
     if (io_pos >= io_n || io_log[io_pos].kind != 2 || io_log[io_pos].port != port || io_log[io_pos].val != v) {
         io_fail("unexpected OUT %03X,%02X", port, v); return;
     }
     io_pos++;
 }
 static void rep_bios(V30 *c, unsigned vec) {
+    rep_irqs(c, 0);
     if (io_pos >= io_n || io_log[io_pos].kind != 3 || io_log[io_pos].port != vec) { io_fail("unexpected INT %02X (event %u)", vec, io_pos); return; }
     if (vec == 0x1A) { AX = io_log[io_pos].ax; CX = io_log[io_pos].cx; DX = io_log[io_pos].dx; }
     else real_bios(c, vec);
     io_pos++;
 }
-static void rep_sync(V30 *c) { c->cycles = 400; }
-
-static int in_hand_run;
+/* a hand run that idles forever without reaching the next recorded event is abandoned */
+static jmp_buf hand_abort;
+static unsigned long stall;
+static void rep_sync(V30 *c) {
+    c->cycles = 400;
+    unsigned pos = io_pos;
+    rep_irqs(c, 0);
+    if (io_pos != pos) stall = 0;
+    else if (++stall > 5000000ul) longjmp(hand_abort, 1);
+}
 
 void cat_hand_call(V30 *c, unsigned off, cat_fn hand, cat_fn gen) {
     if (cat_hand_mode == HAND_GEN) { gen(c); return; }
-    if (cat_hand_mode == HAND_ON || (depth && in_hand_run)) { if (depth) stats[off].nested++; hand(c); c->ip = pop16(c); return; }
+    if (cat_hand_mode == HAND_ON || (depth && in_hand_run)) {
+        if (depth) stats[off].nested++;
+        cat_seq++; hand(c); cat_seq++;
+        c->ip = pop16(c);
+        return;
+    }
     if (depth) { gen(c); return; }        /* inside the recompiled run of an outer check */
     /* check: run both from the same state, compare, keep the recompiled result */
     Stat *st = &stats[off];
@@ -165,22 +205,42 @@ void cat_hand_call(V30 *c, unsigned off, cat_fn hand, cat_fn gen) {
     if (!pool[0]) pool[0] = malloc(sizeof(Snap) * 3);
     Snap *in = &pool[0][0], *g = &pool[0][1], *h = &pool[0][2];
     uint8_t hold0 = c->irq_hold;
-    real_in = c->io_in; real_out = c->io_out; real_bios = c->bios; real_sync = c->sync;
+    real_in = c->io_in; real_out = c->io_out; real_bios = c->bios; real_sync = c->sync; real_ack = c->irq_ack;
     depth++;
-    c->irq_hold++;
     take(in, c);
     io_n = 0; io_pos = 0; io_bad = 0;
-    c->io_in = rec_in; c->io_out = rec_out; c->bios = rec_bios;
+    /* interrupts may happen in the recompiled run; they are recorded with the I/O */
+    c->io_in = rec_in; c->io_out = rec_out; c->bios = rec_bios; c->irq_ack = rec_ack;
+    cat_seq = 0;
     gen(c);
-    c->io_in = real_in; c->io_out = real_out; c->bios = real_bios;
+    c->io_in = real_in; c->io_out = real_out; c->bios = real_bios; c->irq_ack = real_ack;
     take(g, c);
     put(in, c);
-    c->io_in = rep_in; c->io_out = rep_out; c->bios = rep_bios; c->sync = rep_sync;
+    c->io_in = rep_in; c->io_out = rep_out; c->bios = rep_bios; c->sync = rep_sync; c->irq_ack = rep_ack;
     in_hand_run = 1;
-    hand(c); c->ip = pop16(c);
+    stall = 0;
+    cat_seq = 1;                                         /* the recompiled run counted its own entry */
+    if (setjmp(hand_abort) == 0) {
+        hand(c); cat_seq++; c->ip = pop16(c);
+        rep_irqs(c, 2);
+    } else {
+        in_isr = 0;
+        io_fail("hand version stalled after %u of %u recorded events", io_pos, io_n);
+    }
     in_hand_run = 0;
-    c->io_in = real_in; c->io_out = real_out; c->bios = real_bios; c->sync = real_sync;
-    if (io_pos != io_n) io_fail("hand version did %u of %u recorded I/O events", io_pos, io_n);
+    c->io_in = real_in; c->io_out = real_out; c->bios = real_bios; c->sync = real_sync; c->irq_ack = real_ack;
+    if (io_pos != io_n) {
+        io_fail("hand version did %u of %u recorded I/O events", io_pos, io_n);
+        if (io_bad == 1 && printed < 20) {
+            fprintf(stderr, "   recorded events from %u:", io_pos > 3 ? io_pos - 3 : 0);
+            for (unsigned k = io_pos > 3 ? io_pos - 3 : 0; k < io_n && k < io_pos + 6; k++)
+                fprintf(stderr, " %s%X%s%s", (const char *[]){"?", "in ", "out ", "int ", "irq "}[io_log[k].kind],
+                        io_log[k].port, io_log[k].kind == 3 ? "@" : "", k == io_pos ? "<" : "");
+            for (unsigned k = io_pos > 3 ? io_pos - 3 : 0; k < io_n && k < io_pos + 6; k++)
+                if (io_log[k].kind == 3) fprintf(stderr, " [%u: from %04X DX=%04X]", k, io_log[k].val, io_log[k].dx);
+            fprintf(stderr, "\n");
+        }
+    }
     take(h, c);
     depth--;
     uint32_t d = state_diff(&g->cpu, &h->cpu), live = live_out(off);
@@ -206,6 +266,7 @@ void cat_call(V30 *c, uint16_t off) {
     if (!f) v30_fatal(c, "cat_call: no routine at %04X", off);
     f(c);
     while (!(c->ip == 0xFFFF && SP == ret_sp)) v30_dispatch(c);   /* unusual returns */
+    if (in_hand_run) rep_irqs(c, 1);          /* interrupts the original took during that call */
 }
 
 unsigned cat_hand_report(FILE *f) {

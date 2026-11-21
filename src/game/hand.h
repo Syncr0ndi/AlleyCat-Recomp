@@ -68,6 +68,12 @@ static inline void rep_movsb(V30 *c) {
     for (; CX; CX--) { w8(c, ES, DI, m8(c, DS, SI)); SI = (uint16_t)(SI + d); DI = (uint16_t)(DI + d); V30_TICK(17); }
 }
 
+/* a turn of a busy-wait loop: time passes, interrupts and the machine get their chance */
+static inline void idle(V30 *c, int cycles) {
+    V30_TICK(cycles);
+    if (c->cycles <= 0 || (c->irq_pending && c->ifl)) v30_sync_point(c);
+}
+
 enum { HAND_GEN = 0, HAND_ON = 1, HAND_CHECK = 2 };
 extern int cat_hand_mode;
 int cat_hand_busy(void);                 /* inside a check-mode comparison */
