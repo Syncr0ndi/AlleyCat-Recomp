@@ -13,19 +13,27 @@ ap.add_argument("cat_exe")
 ap.add_argument("--seeds", type=int, default=8)
 ap.add_argument("--frames", type=int, default=6000)
 ap.add_argument("--exe", default=str(ROOT / "build" / "rel" / "cat_test.exe"))
+ap.add_argument("--room", type=int, action="append", default=[], help="also run seeds pinned to room N (repeatable)")
+ap.add_argument("--all-rooms", action="store_true", help="same as --room 1 ... --room 7")
 a = ap.parse_args()
 
 
-def run(seed):
-    p = subprocess.run([a.exe, a.cat_exe, "--hand-mode", "check", "--autoplay", str(seed), "--rooms", "--frames", str(a.frames)],
+if a.all_rooms: a.room = list(range(1, 8))
+
+
+def run(job):
+    seed, room = job
+    extra = ["--room", str(room)] if room >= 0 else ["--rooms"]
+    p = subprocess.run([a.exe, a.cat_exe, "--hand-mode", "check", "--autoplay", str(seed), "--frames", str(a.frames)] + extra,
                        capture_output=True, text=True)
-    return seed, p.stdout, p.stderr
+    return f"{seed}" + (f" room {room}" if room >= 0 else ""), p.stdout, p.stderr
 
 
 calls, bad, flags, nested = collections.Counter(), collections.Counter(), collections.Counter(), collections.Counter()
 errors = []
 with concurrent.futures.ThreadPoolExecutor(max_workers=os.cpu_count() or 4) as ex:
-    for seed, out, err in ex.map(run, range(1, a.seeds + 1)):
+    jobs = [(s, -1) for s in range(1, a.seeds + 1)] + [(s, r) for r in a.room for s in range(1, 5)]
+    for seed, out, err in ex.map(run, jobs):
         for m in re.finditer(r"hand_([0-9a-f]{4}):\s+(\d+) calls checked, (\d+) mismatches, (\d+) flag-only differences, (\d+) nested", out):
             o = m.group(1); calls[o] += int(m.group(2)); bad[o] += int(m.group(3)); flags[o] += int(m.group(4)); nested[o] += int(m.group(5))
         if err.strip(): errors.append(f"--- seed {seed}\n" + "\n".join(err.strip().splitlines()[:30]))

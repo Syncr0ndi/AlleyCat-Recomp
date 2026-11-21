@@ -65,7 +65,7 @@ static void finish(int code) {
 
 /* --autoplay SEED: random but plausible play, including menus, pauses and restarts */
 static uint32_t ap_seed;
-static int ap_on, ap_rooms;
+static int ap_on, ap_rooms, ap_room = -1;
 static uint32_t ap_rand(void) { ap_seed = ap_seed * 1103515245u + 12345u; return ap_seed >> 8; }
 static struct { uint8_t sc; long until; } ap_held[4];
 
@@ -102,8 +102,13 @@ static void on_frame(PC *p) {
     static int room_pending;
     if (ap_rooms && f % 400 == 0) room_pending = 1 + (f / 400) % 5;
     if (room_pending && !cat_hand_busy()) {       /* never while a routine is being compared */
-        p->mem[((PC_LOAD_SEG + 0x10) << 4) + 0x551] = 1;
-        if (room_pending == 5) p->mem[((PC_LOAD_SEG + 0x10) << 4) + 0x418] = 1;   /* special room */
+        uint8_t *ds = p->mem + ((PC_LOAD_SEG + 0x10) << 4);
+        if (ap_room >= 0) {                       /* --room N: the room picker can only choose N */
+            for (int i = 0x421; i < 0x432; i++) ds[i] = (uint8_t)ap_room;
+            ds[0x41D] = ds[0x41E] = ds[0x41F] = ds[0x420] = 0xFF;
+        }
+        ds[0x551] = 1;
+        if (room_pending == 5 && ap_room < 0) ds[0x418] = 1;   /* special room */
         room_pending = 0;
     }
     for (int i = 0; i < nkeys; i++) {
@@ -132,6 +137,7 @@ int main(int argc, char **argv) {
         else if (!strcmp(argv[i], "--scale") && i + 1 < argc) scale = atof(argv[++i]);
         else if (!strcmp(argv[i], "--coverage") && i + 1 < argc) cov_file = argv[++i];
         else if (!strcmp(argv[i], "--rooms")) ap_rooms = 1;
+        else if (!strcmp(argv[i], "--room") && i + 1 < argc) { ap_rooms = 1; ap_room = atoi(argv[++i]); }
         else if (!strcmp(argv[i], "--autoplay") && i + 1 < argc) { ap_on = 1; ap_seed = (uint32_t)atol(argv[++i]); }
         else if (!strcmp(argv[i], "--hand-mode") && i + 1 < argc) {
             const char *m = argv[++i];

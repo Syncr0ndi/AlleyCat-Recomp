@@ -102,7 +102,8 @@ static void report_mismatch(unsigned off, const Snap *in, const Snap *g, const S
  * touch memory, which is restored in between). The machine does not advance while the
  * hand-written version runs. */
 typedef struct { uint8_t kind; uint16_t port; uint16_t val; uint16_t ax, cx, dx; } IoEv;   /* kind: 1 in, 2 out, 3 bios */
-static IoEv io_log[8192];
+#define IO_MAX (1u << 20)
+static IoEv io_log[IO_MAX];
 static unsigned io_n, io_pos, io_bad;
 static char io_why[160];
 static uint16_t (*real_in)(V30 *, uint16_t, int);
@@ -115,16 +116,16 @@ static void io_fail(const char *fmt, unsigned a, unsigned b) {
 }
 static uint16_t rec_in(V30 *c, uint16_t port, int w) {
     uint16_t v = real_in(c, port, w);
-    if (io_n < 8192) io_log[io_n++] = (IoEv){1, port, v, 0, 0, 0};
+    if (io_n < IO_MAX) io_log[io_n++] = (IoEv){1, port, v, 0, 0, 0};
     return v;
 }
 static void rec_out(V30 *c, uint16_t port, uint16_t v, int w) {
     real_out(c, port, v, w);
-    if (io_n < 8192) io_log[io_n++] = (IoEv){2, port, v, 0, 0, 0};
+    if (io_n < IO_MAX) io_log[io_n++] = (IoEv){2, port, v, 0, 0, 0};
 }
 static void rec_bios(V30 *c, unsigned vec) {
     real_bios(c, vec);
-    if (io_n < 8192) io_log[io_n++] = (IoEv){3, (uint16_t)vec, 0, AX, CX, DX};
+    if (io_n < IO_MAX) io_log[io_n++] = (IoEv){3, (uint16_t)vec, 0, AX, CX, DX};
 }
 static uint16_t rep_in(V30 *c, uint16_t port, int w) {
     (void)c; (void)w;
