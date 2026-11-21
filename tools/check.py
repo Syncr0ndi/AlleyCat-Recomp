@@ -1,0 +1,44 @@
+#!/usr/bin/env python3
+"""Check every hand-written routine against the recompiled code over several autoplay runs.
+
+Usage: python tools/check.py CAT.EXE [--seeds N] [--frames N] [--exe build/rel/cat_test.exe]
+Runs the seeds in parallel, merges the per-routine counts and prints the first mismatches.
+Exit code 0 only if there were no mismatches."""
+import argparse, collections, concurrent.futures, os, re, subprocess, sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+ap = argparse.ArgumentParser()
+ap.add_argument("cat_exe")
+ap.add_argument("--seeds", type=int, default=8)
+ap.add_argument("--frames", type=int, default=6000)
+ap.add_argument("--exe", default=str(ROOT / "build" / "rel" / "cat_test.exe"))
+a = ap.parse_args()
+
+
+def run(seed):
+    p = subprocess.run([a.exe, a.cat_exe, "--hand-mode", "check", "--autoplay", str(seed), "--rooms", "--frames", str(a.frames)],
+                       capture_output=True, text=True)
+    return seed, p.stdout, p.stderr
+
+
+calls, bad, flags = collections.Counter(), collections.Counter(), collections.Counter()
+errors = []
+with concurrent.futures.ThreadPoolExecutor(max_workers=os.cpu_count() or 4) as ex:
+    for seed, out, err in ex.map(run, range(1, a.seeds + 1)):
+        for m in re.finditer(r"hand_([0-9a-f]{4}):\s+(\d+) calls checked, (\d+) mismatches, (\d+) flag", out):
+            o = m.group(1); calls[o] += int(m.group(2)); bad[o] += int(m.group(3)); flags[o] += int(m.group(4))
+        if err.strip(): errors.append(f"--- seed {seed}\n" + "\n".join(err.strip().splitlines()[:30]))
+        if "end: frame" not in out: errors.append(f"--- seed {seed}: run did not finish\n{out[-500:]}")
+
+done = set()
+for f in (ROOT / "src" / "game").glob("*.c"):
+    done |= set(re.findall(r"^void hand_([0-9a-f]{4})\(V30 \*c\)", f.read_text(), re.M))
+for o in sorted(done):
+    tag = "NEVER CALLED" if not calls[o] else ("OK" if not bad[o] else "MISMATCH")
+    print(f"  {o.upper()}  {calls[o]:8d} calls  {bad[o]:5d} bad  {flags[o]:5d} flag-only  {tag}")
+total = sum(bad.values())
+print(f"{len(done)} routines, {sum(calls.values())} calls checked, {total} mismatches, "
+      f"{sum(1 for o in done if not calls[o])} never called")
+for e in errors[:4]: print(e)
+sys.exit(1 if total or errors else 0)

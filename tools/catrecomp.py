@@ -18,6 +18,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import catmap                                            # noqa: E402
+import liveness                                          # noqa: E402
 from v30dec import (SEQ, JMP, JCC_, CALL, RET, JMPF, CALLF, RETF, IRET,  # noqa: E402
                     IJMP, ICALL, IJMPF, ICALLF, HALT, R8, R16, SREG)
 
@@ -346,6 +347,8 @@ class Gen:
             ins = self.code[l]
             if l in lab:
                 lines.append(f"L_{l:05x}:")
+            if l == key[0]:
+                lines.append(f"    cat_cov[0x{root_off:04x}]++;")
             if self.comments:
                 lines.append(f"    /* {ins.cs:04X}:{ins.ip:04X} {ins.text()} */")
             lines.append("    " + self.insn(ins, key))
@@ -518,10 +521,17 @@ def main():
         cs, ip, fn = entries[l]
         ent.append(f"    {{0x{l:05x}, 0x{cs:04x}, 0x{ip:04x}, {fn}}}," + NL)
     ent.append("};" + NL + f"const unsigned cat_entry_count = {len(entries)};" + NL)
+    live = liveness.analyse(g.m)
+    ent.append("/* registers / flags callers read after each routine returns (tools/liveness.py) */" + NL)
+    ent.append("const uint32_t cat_live_out[][2] = {" + NL)
+    for off, (_i, o) in sorted(live.items()): ent.append(f"    {{0x{off:04x}, 0x{o:06x}}}," + NL)
+    ent.append("};" + NL + f"const unsigned cat_live_out_count = {len(live)};" + NL)
     hdr = ["/* Generated. Do not edit. */", "#pragma once", '#include "v30.h"',
            "extern const v30_entry cat_entries[];", "extern const unsigned cat_entry_count;"]
     hdr += [f"void {g.fname[k]}(V30 *c);" for k in keys]
-    hdr += ["typedef void (*cat_fn)(V30 *c);",
+    hdr += ["extern uint32_t cat_cov[0x10000];   /* times each routine was entered (test coverage) */",
+            "extern const uint32_t cat_live_out[][2];", "extern const unsigned cat_live_out_count;",
+            "typedef void (*cat_fn)(V30 *c);",
             "void cat_hand_call(V30 *c, unsigned off, cat_fn hand, cat_fn gen);"]
     hdr += [f"void hand_{o:04x}(V30 *c);" for o in sorted(g.hand)]
     hdr += [f"void {g.fname[k]}_gen(V30 *c);" for k in keys if k[0] - k[1] * 16 in g.hand]
