@@ -55,6 +55,12 @@ struct PC {
     /* CGA */
     uint8_t cga_mode, cga_color, crtc_index, crtc[18];
 
+    /* game port (IBM Game Control Adapter) with one joystick */
+    bool joy_present;                  /* set before pc_init: reported in the equipment word */
+    uint8_t joy_axis[2];               /* x, y: 0 = left/up, 128 = centre, 255 = right/down */
+    uint8_t joy_buttons;               /* bit 0 = button A, bit 1 = button B (1 = pressed) */
+    uint64_t joy_fired;                /* cycle of the last write to port 201h */
+
     /* host hooks */
     void (*on_frame)(PC *pc);          /* once per frame, at the start of vertical retrace */
     void (*on_exit)(PC *pc, int code); /* DOS exit / reboot */

@@ -65,7 +65,7 @@ static void finish(int code) {
 
 /* --autoplay SEED: random but plausible play, including menus, pauses and restarts */
 static uint32_t ap_seed;
-static int ap_on, ap_rooms, ap_room = -1;
+static int ap_on, ap_rooms, ap_room = -1, ap_joy;
 static uint32_t ap_rand(void) { ap_seed = ap_seed * 1103515245u + 12345u; return ap_seed >> 8; }
 static struct { uint8_t sc; long until; } ap_held[4];
 
@@ -98,6 +98,15 @@ static void autoplay(PC *p, long f) {
 static void on_frame(PC *p) {
     long f = (long)p->frames;
     if (ap_on) autoplay(p, f);
+    if (ap_joy) {                                 /* the held autoplay keys also move the joystick */
+        int l = 0, r = 0, u = 0, d = 0, b = 0;
+        for (int i = 0; i < 4; i++) switch (ap_held[i].sc) {
+            case 0x4B: l = 1; break; case 0x4D: r = 1; break; case 0x48: u = 1; break;
+            case 0x50: d = 1; break; case 0x38: b = 1; break; default: break; }
+        p->joy_axis[0] = l ? 10 : r ? 245 : 128;
+        p->joy_axis[1] = u ? 10 : d ? 245 : 128;
+        p->joy_buttons = (uint8_t)b;
+    }
     /* --rooms: every 400 frames, act as if the cat had jumped through a window (test coverage) */
     static int room_pending;
     if (ap_rooms && f % 400 == 0) room_pending = 1 + (f / 400) % 5;
@@ -137,6 +146,7 @@ int main(int argc, char **argv) {
         else if (!strcmp(argv[i], "--scale") && i + 1 < argc) scale = atof(argv[++i]);
         else if (!strcmp(argv[i], "--coverage") && i + 1 < argc) cov_file = argv[++i];
         else if (!strcmp(argv[i], "--rooms")) ap_rooms = 1;
+        else if (!strcmp(argv[i], "--joystick")) { ap_joy = 1; pc.joy_present = true; }
         else if (!strcmp(argv[i], "--room") && i + 1 < argc) { ap_rooms = 1; ap_room = atoi(argv[++i]); }
         else if (!strcmp(argv[i], "--autoplay") && i + 1 < argc) { ap_on = 1; ap_seed = (uint32_t)atol(argv[++i]); }
         else if (!strcmp(argv[i], "--hand-mode") && i + 1 < argc) {

@@ -112,7 +112,14 @@ static uint16_t pc_in(V30 *c, uint16_t port, int word) {
     }
     case 0x60: return pc->kbd_data;
     case 0x61: return (uint8_t)(pc->port61 | (pit2_level(pc, t) ? 0x20 : 0));
-    case 0x201: return 0xFF;                            /* no game port */
+    case 0x201: {                                       /* game port */
+        if (!pc->joy_present) return 0xFF;
+        uint8_t v = (uint8_t)(0xF0 & ~((pc->joy_buttons & 3) << 4));
+        /* each axis one-shot stays high ~24 us + up to ~1.1 ms depending on the stick */
+        for (int i = 0; i < 2; i++)
+            if (t - pc->joy_fired < (uint64_t)(115 + pc->joy_axis[i] * 20)) v |= (uint8_t)(1 << i);
+        return v;
+    }
     case 0x3D5: return pc->crtc_index < 18 ? pc->crtc[pc->crtc_index] : 0xFF;
     case 0x3DA: {
         uint64_t ph = t % PC_FRAME_CYC;
@@ -166,6 +173,7 @@ static void pc_out(V30 *c, uint16_t port, uint16_t val, int word) {
         if ((v & 1) && !(pc->port61 & 1)) pc->pit2_start = t;   /* gate rising edge restarts */
         pc->port61 = v & 0x0F;
         break;
+    case 0x201: pc->joy_fired = t; break;
     case 0x3D4: pc->crtc_index = v & 0x1F; break;
     case 0x3D5: if (pc->crtc_index < 18) pc->crtc[pc->crtc_index] = v; break;
     case 0x3D8: pc->cga_mode = v; break;
@@ -337,7 +345,8 @@ bool pc_init(PC *pc, const uint8_t *d, size_t n, const v30_entry *entries, unsig
     for (unsigned v = 0; v < 256; v++) {
         mem[v * 4] = (uint8_t)v; mem[v * 4 + 1] = 0; mem[v * 4 + 2] = 0x00; mem[v * 4 + 3] = 0xF0;
     }
-    bda_w16(pc, 0x10, 0x0021);                          /* floppy, 80x25 colour, no game port */
+    bda_w16(pc, 0x10, pc->joy_present ? 0x1021 : 0x0021);   /* floppy, 80x25 colour, game port? */
+    pc->joy_axis[0] = pc->joy_axis[1] = 128;
     bda_w16(pc, 0x13, 640);
     mem[0xFFFFE] = 0xFF;                                /* machine ID: IBM PC */
     mem[PC_PSP_SEG * 16] = 0xCD; mem[PC_PSP_SEG * 16 + 1] = 0x20;   /* PSP:0 INT 20h */
