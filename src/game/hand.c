@@ -192,6 +192,7 @@ static void rep_sync(V30 *c) {
 
 void cat_hand_call(V30 *c, unsigned off, cat_fn hand, cat_fn gen) {
     if (cat_hand_mode == HAND_GEN) { gen(c); return; }
+    if (off == 0 && !depth) { hand(c); c->ip = pop16(c); return; }   /* the main loop never returns: no comparison */
     if (cat_hand_mode == HAND_ON || (depth && in_hand_run)) {
         if (depth) stats[off].nested++;
         cat_seq++; hand(c); cat_seq++;

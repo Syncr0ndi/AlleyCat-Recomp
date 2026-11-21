@@ -484,13 +484,26 @@ def hand_functions(src_dir):
     return found
 
 
-def check_hand(g, hand):
+def absorbed_routines(src_dir):
+    """Routines folded into a hand-written one ("// absorbs: 0260 02AA ..." in src/game/*.c):
+    their recompiled code becomes unreachable, so their jumps do not count."""
+    import re
+    found = set()
+    for f in sorted(Path(src_dir).glob("*.c")):
+        for line in re.findall(r"^// absorbs:(.*)$", f.read_text(), re.M):
+            found |= {int(h, 16) for h in line.split()}
+    return found
+
+
+def check_hand(g, hand, absorbed=frozenset()):
     roots = {k[0] - k[1] * 16: k for k in g.groups}
     for off in sorted(hand):
         if off not in roots: raise SystemExit(f"hand_{off:04x}: no routine starts at {off:04X}")
         key = roots[off]
         for l, ins in g.code.items():
             if ins.target is None or g.group_of[l] == key: continue
+            src = g.group_of[l]
+            if src[0] - src[1] * 16 in absorbed: continue
             t = g.canon(*ins.target)
             if t in g.code and g.group_of[t] == key and t != key[0]:
                 raise SystemExit(f"hand_{off:04x}: {ins.ip:04X} enters the routine in the middle at {t - key[1] * 16:04X}")
@@ -506,8 +519,9 @@ def main():
     comments = "--no-comments" not in sys.argv
     g = Gen(catmap.main(exe, quiet=True), comments)
     if "--hand" in sys.argv:
-        g.hand = hand_functions(sys.argv[sys.argv.index("--hand") + 1])
-        check_hand(g, g.hand)
+        src_dir = sys.argv[sys.argv.index("--hand") + 1]
+        g.hand = hand_functions(src_dir)
+        check_hand(g, g.hand, absorbed_routines(src_dir))
     keys = sorted(g.groups)
     entries, chunks = {}, []
     for fi in range(0, len(keys), per_file):

@@ -1,10 +1,11 @@
-/* Alley Cat, hand-written: the bonus after a room, and the sweetheart on the fence.
+/* Alley Cat, hand-written: the bonus after a room, and the fishbowl in room 1.
  *
  * Bonus: points for the time left (binary [3697] -> BCD at 368D, added to the score
  * 1F82), shown in BIOS text over a banner; in room 7 times a multiplier. */
 #include "hand.h"
 
-/* 3850 sweetheart: animate her (4 frames, every 6 ticks); touching her sets [0554]. */
+/* 3850 room1_bowl: animate the fishbowl on the table (4 frames, every 6 ticks); jumping
+ * into it sets [0554] (-> the fishbowl state). */
 void hand_3850(V30 *c) {
     AH = 0;
     INT(0x1A);
