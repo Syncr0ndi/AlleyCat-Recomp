@@ -1,0 +1,12 @@
+# Build output (contains code generated from the game: never commit)
+build/
+out/
+dist/
+__pycache__/
+# The original game and anything derived from it
+*.EXE
+*.exe
+*.zip
+alleycat.ini
+alleycat_*.png
+alleycat_crash.log
