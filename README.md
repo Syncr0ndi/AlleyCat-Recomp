@@ -3,12 +3,13 @@
 </p>
 
 <p align="center">
-  <b>Bill Williams' 1984 IBM PC classic <i>Alley Cat</i>, rewritten in C to run natively on Windows.</b><br>
+  <b>Bill Williams' 1984 IBM PC classic <i>Alley Cat</i>, rewritten in C to run natively on Windows and Linux x86-64.</b><br>
   No DOSBox, no game files included &mdash; bring your own <code>CAT.EXE</code> and play.
 </p>
 
 <p align="center">
   <img src="https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-0078D6?style=for-the-badge" alt="Platform: Windows 10 | 11">
+  <img src="https://img.shields.io/badge/platform-Linux%20x86--64-0078D6?style=for-the-badge" alt="Platform: Linux x86-64">
   <img src="https://img.shields.io/badge/status-1.0-2ea44f?style=for-the-badge" alt="Status: 1.0">
   <img src="https://img.shields.io/badge/license-MIT-2ea44f?style=for-the-badge" alt="License: MIT">
   <img src="https://img.shields.io/badge/written%20in-C-555555?style=for-the-badge" alt="Written in C">
@@ -47,6 +48,9 @@
    is in `alleycat.ini`.
 
 You can also put `CAT.EXE` next to `alleycat.exe`, or start `alleycat.exe C:\path\to\CAT.EXE`.
+
+On Linux, run `./alleycat /path/to/CAT.EXE`, or put `CAT.EXE` next to `alleycat` and run `./alleycat`.
+The Linux version does not have a file picker.
 
 > [!TIP]
 > Windows may show *"Windows protected your PC"* for a newly downloaded program. Click
@@ -98,7 +102,8 @@ More detail: [rewrite method and status](docs/REWRITE.md) ·
 
 ## 🧱 Building from source
 
-You need Windows, Python 3, CMake, Ninja and LLVM-MinGW (clang). CMake downloads SDL2 itself. See
+You need Python 3, CMake, Ninja and a C compiler (LLVM-MinGW on Windows, GCC or Clang on Linux).
+CMake downloads SDL2 itself. See
 the [**development guide**](docs/DEVELOPMENT.md) for the steps, the checker and the test runner.
 
 ## ❓ FAQ

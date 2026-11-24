@@ -250,12 +250,12 @@ static void read_ini(char *game, size_t n) {
 static void write_ini(const char *game) {
     FILE *f = fopen(ini_path, "w");
     if (!f) return;
-    fprintf(f, "; Alley Cat for Windows\n; game = path to your original CAT.EXE (it is read at every start)\ngame=%s\n", game);
+    fprintf(f, "; Alley Cat\n; game = path to your original CAT.EXE (it is read at every start)\ngame=%s\n", game);
     fclose(f);
 }
 
-static bool pick_file(char *out, size_t n) {
 #ifdef _WIN32
+static bool pick_file(char *out, size_t n) {
     OPENFILENAMEA ofn;
     memset(&ofn, 0, sizeof ofn);
     out[0] = 0;
@@ -265,10 +265,8 @@ static bool pick_file(char *out, size_t n) {
     ofn.lpstrTitle = "Where is your Alley Cat CAT.EXE?";
     ofn.Flags = OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST | OFN_NOCHANGEDIR;
     return GetOpenFileNameA(&ofn) != 0;
-#else
-    (void)out; (void)n; return false;
-#endif
 }
+#endif
 
 static void msg(const char *text) { SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "Alley Cat", text, NULL); }
 
@@ -280,6 +278,7 @@ static bool find_game(int argc, char **argv, uint8_t **exe, size_t *len) {
     if (cand[0] && game_file_load(cand, exe, len) == GAME_FILE_OK) return true;
     snprintf(cand, sizeof cand, "%sCAT.EXE", base_dir);
     if (game_file_load(cand, exe, len) == GAME_FILE_OK) { write_ini(cand); return true; }
+#ifdef _WIN32
     msg("This program needs the original Alley Cat game file, CAT.EXE (1984).\n"
         "It is not included. Please choose your copy in the next window.\n"
         "Its location is saved in alleycat.ini.");
@@ -290,6 +289,11 @@ static bool find_game(int argc, char **argv, uint8_t **exe, size_t *len) {
         msg(rc == GAME_FILE_WRONG ? "That file is not the known CAT.EXE (55,067 bytes, August 1984). Please try another."
                                   : "That file could not be read. Please try another.");
     }
+#else
+    msg("This program needs the original Alley Cat game file, CAT.EXE (1984).\n"
+        "Put CAT.EXE next to the program, or run: alleycat /path/to/CAT.EXE");
+    return false;
+#endif
 }
 
 int main(int argc, char **argv) {
