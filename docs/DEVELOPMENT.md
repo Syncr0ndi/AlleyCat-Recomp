@@ -2,19 +2,29 @@
 
 ## Requirements
 
-- Windows 10 or 11
+- Windows 10 or 11, or Linux x86-64
 - Python 3
 - CMake 3.20+ and Ninja
-- [LLVM-MinGW](https://github.com/mstorsjo/llvm-mingw) (clang)
+- [LLVM-MinGW](https://github.com/mstorsjo/llvm-mingw) (clang) on Windows, or GCC/Clang on Linux
 - Your own `CAT.EXE` (55,067 bytes, SHA-256 `4979c886…7bfdd`)
 
 CMake downloads SDL2 2.30.9 itself, pinned by hash.
+On Linux, install the development packages for X11 and/or Wayland and an audio backend
+before configuring SDL2 (for example, `libx11-dev`, `libxext-dev`, and `libasound2-dev` on Debian/Ubuntu).
 
 ## Building
 
 ```powershell
 cmake -S . -B build/rel -G Ninja -DCMAKE_C_COMPILER=clang -DCAT_EXE="C:/path/to/CAT.EXE"
 cmake --build build/rel
+```
+
+On Linux x86-64, for example:
+
+```sh
+cmake -S . -B build/linux-x86_64 -G Ninja -DCAT_EXE=/path/to/CAT.EXE
+cmake --build build/linux-x86_64
+./build/linux-x86_64/alleycat_release /path/to/CAT.EXE
 ```
 
 | Target | What it is |
@@ -39,6 +49,18 @@ This writes `dist/AlleyCat/` and `dist/AlleyCat-Windows.zip`:
 - `LICENSES/`, with this port's MIT licence and SDL2's zlib licence
 
 It refuses to build the zip if the program contains any 32-byte run of `CAT.EXE`.
+
+On Linux x86-64, package the native build with:
+
+```sh
+python3 tools/make_release.py /path/to/CAT.EXE --build build/linux-x86_64
+```
+
+This writes `dist/AlleyCat-Linux-x86_64/` and `dist/AlleyCat-Linux-x86_64.zip`.
+SDL2 is statically linked, but the binary still requires a compatible Linux system and
+the runtime libraries used by its selected video and audio backends. Build on an older
+supported distribution for broader glibc compatibility. The platform can also be selected
+explicitly using `--platform windows` or `--platform linux`.
 
 ## Checking the hand-written code
 
